@@ -21,6 +21,10 @@ otto_receipt_automation.gs
 *.png
 *.jpg
 
+# ただしPWAアイコンは公開する
+!icons/
+!icons/*
+
 # OS / ツール
 .DS_Store
 Thumbs.db
