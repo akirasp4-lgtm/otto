@@ -90,8 +90,11 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 
 <div style="max-width:1100px;margin:12px auto 0;padding:0 12px">
   <div class="banner info" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-    <div>☁️ <b>マスタの正式な保管場所はGoogleスプレッドシートです。</b>ここはローカル確認・編集用。</div>
-    <button class="btn btn-blue btn-small" onclick="pullMasterFromCloud()" id="pullBtn">☁️ クラウドから取得</button>
+    <div>☁️ <b>編集したら必ず「クラウドに保存」を押してください。</b>スタッフのアプリに反映されます。</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-small" onclick="pullMasterFromCloud()" id="pullBtn">☁️↓ 取得</button>
+      <button class="btn btn-primary btn-small" onclick="pushMasterToCloud()" id="pushBtn">☁️↑ 保存</button>
+    </div>
   </div>
   <div id="pullStatus" style="font-size:12px;margin-top:4px"></div>
 </div>
@@ -524,6 +527,29 @@ function loadDefaults(kind) {
   if (kind === 'recipes')   { recipes  = sampleRecipes();  saveLS(LS_RECIPES, recipes);  }
   if (kind === 'inventory') { inventory= sampleInventory();saveLS(LS_INVENTORY, inventory); }
   renderAll();
+}
+
+// ================================================================
+// クラウド（スプレッドシート）へマスタ保存
+// ================================================================
+async function pushMasterToCloud() {
+  const btn = document.getElementById('pushBtn');
+  const status = document.getElementById('pullStatus');
+  if (!confirm(`クラウドに保存します（商品${products.length}・レシピ${recipes.length}・在庫${inventory.length}）。既存の内容は上書きされます。続行しますか？`)) return;
+  btn.disabled = true;
+  const oldText = btn.textContent;
+  btn.textContent = '☁️↑ 保存中...';
+  status.innerHTML = '';
+  try {
+    const res = await OTTO.master.saveAll({ products, recipes, inventory });
+    const v = res.version ? `v${res.version}` : '';
+    status.innerHTML = `<span style="color:#15803d">✅ 保存完了 ${v}（商品${products.length}/レシピ${recipes.length}/在庫${inventory.length}）</span>`;
+  } catch (err) {
+    status.innerHTML = `<span style="color:#991b1b">❌ 保存失敗: ${escHtml(err.message)}<br>GASの再デプロイが必要かも</span>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = oldText;
+  }
 }
 
 // ================================================================

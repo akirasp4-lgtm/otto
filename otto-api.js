@@ -49,7 +49,49 @@
       if (!raw) return null;
       try { return JSON.parse(raw).data; } catch { return null; }
     },
+
+    // 一括保存: { products?, recipes?, inventory?, settings? }
+    async saveAll({ products, recipes, inventory, settings } = {}) {
+      const body = {};
+      if (products)  body.products  = products;
+      if (recipes)   body.recipes   = recipes;
+      if (inventory) body.inventory = inventory;
+      if (settings)  body.settings  = settings;
+      const res = await fetch(WORKER_URL + '/master', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.error) throw new Error(data.error || 'HTTP ' + res.status);
+      // キャッシュを invalidate
+      try { localStorage.removeItem(CACHE_MASTER); } catch {}
+      return data;
+    },
+
+    // 個別保存（products だけ / recipes だけ）
+    async saveProducts(products) {
+      return _saveKind('/products', { products });
+    },
+    async saveRecipes(recipes) {
+      return _saveKind('/recipes', { recipes });
+    },
+    async saveInventory(inventory) {
+      return _saveKind('/inventory', { inventory });
+    },
   };
+
+  async function _saveKind(path, body) {
+    const res = await fetch(WORKER_URL + path, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.error) throw new Error(data.error || 'HTTP ' + res.status);
+    try { localStorage.removeItem(CACHE_MASTER); } catch {}
+    return data;
+  }
 
   // === 売上送信 =======================================================
   const sales = {
