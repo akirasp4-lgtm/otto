@@ -1,0 +1,28 @@
+# Worker / GAS ソース（デプロイ先で管理）
+otto-worker.js
+otto-gas.js
+
+# 設計・引き継ぎドキュメント（社内用、公開不要）
+HANDOVER.md
+BACKEND_DESIGN.md
+DEPLOY.md
+otto-sheet-setup.md
+otto_setup_guide.md
+オットープロンプト.txt
+
+# 旧バージョン
+otto_setup.gs
+otto_receipt_automation.gs
+
+# バイナリ
+*.docx
+*.xlsx
+*.csv
+*.png
+*.jpg
+
+# OS / ツール
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

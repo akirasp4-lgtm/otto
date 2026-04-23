@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>オットー 店長画面</title>
+<meta name="theme-color" content="#b91c1c">
+<style>
+:root{
+  --primary:#b91c1c;--primary-light:#fef2f2;--accent:#f59e0b;
+  --success:#16a34a;--danger:#dc2626;--blue:#2563eb;
+  --gray-50:#f9fafb;--gray-100:#f3f4f6;--gray-200:#e5e7eb;--gray-300:#d1d5db;
+  --gray-400:#9ca3af;--gray-500:#6b7280;--gray-700:#374151;--gray-800:#1f2937;
+  --shadow:0 1px 3px rgba(0,0,0,.1);--r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
+     background:#f5f5f4;color:var(--gray-800);min-height:100vh}
+
+.app-header{background:#1f2937;color:white;padding:0 16px;height:56px;display:flex;align-items:center;
+            justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
+.app-title{font-size:16px;font-weight:700;display:flex;align-items:center;gap:6px}
+.app-title::before{content:"📊"}
+.header-links{display:flex;gap:6px}
+.header-links a{font-size:11px;padding:6px 10px;border:1px solid #374151;border-radius:6px;
+                background:#374151;color:white;text-decoration:none;white-space:nowrap}
+
+.tabs{background:white;padding:0 16px;display:flex;gap:0;border-bottom:1px solid var(--gray-200);
+      overflow-x:auto;position:sticky;top:56px;z-index:90}
+.tab{padding:12px 16px;border:none;background:none;font-size:14px;font-weight:600;color:var(--gray-500);
+     cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;font-family:inherit}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+
+.main{max-width:1100px;margin:0 auto;padding:16px 12px;display:flex;flex-direction:column;gap:14px}
+.card{background:white;border-radius:var(--r);box-shadow:var(--shadow);padding:16px}
+.section-title{font-size:16px;font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+
+/* KPI グリッド */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{background:linear-gradient(135deg,var(--primary),#991b1b);color:white;border-radius:var(--r);padding:14px}
+.kpi.blue{background:linear-gradient(135deg,#2563eb,#1e40af)}
+.kpi.green{background:linear-gradient(135deg,#16a34a,#15803d)}
+.kpi.amber{background:linear-gradient(135deg,#f59e0b,#d97706)}
+.kpi.gray{background:linear-gradient(135deg,#6b7280,#4b5563)}
+.kpi .label{font-size:11px;opacity:.85;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.kpi .val{font-size:24px;font-weight:800;margin-top:4px}
+.kpi .sub{font-size:11px;opacity:.85;margin-top:2px}
+
+/* 表 */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--gray-100);padding:10px 8px;text-align:left;font-weight:700;color:var(--gray-700);border-bottom:1px solid var(--gray-200);white-space:nowrap}
+td{padding:9px 8px;border-bottom:1px solid var(--gray-100);vertical-align:middle}
+tr.warn{background:#fffbeb}
+tr.danger{background:#fef2f2}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+td.red{color:var(--primary);font-weight:700}
+.small-link{font-size:11px;color:var(--gray-400);cursor:pointer;text-decoration:underline}
+
+/* ボタン */
+.btn{padding:10px 16px;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-primary{background:var(--primary);color:white}
+.btn-blue{background:var(--blue);color:white}
+.btn-ghost{background:white;color:var(--gray-700);border:1px solid var(--gray-300)}
+.btn-danger{background:var(--danger);color:white}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.btn-small{padding:6px 10px;font-size:12px}
+
+/* フォーム */
+.form-label{display:block;font-size:11px;font-weight:700;color:var(--gray-500);margin-bottom:4px;text-transform:uppercase}
+.form-control{width:100%;padding:10px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:14px;outline:none;background:white;font-family:inherit}
+.form-control:focus{border-color:var(--primary)}
+.form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:10px}
+
+/* ドロップゾーン */
+.drop-zone{border:2.5px dashed var(--gray-300);border-radius:var(--r);padding:30px;text-align:center;
+           background:var(--gray-50);cursor:pointer;transition:all .2s}
+.drop-zone:hover,.drop-zone.drag{background:var(--primary-light);border-color:var(--primary)}
+.drop-zone .icon{font-size:40px;margin-bottom:8px}
+
+/* バッジ */
+.badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700}
+.badge.warn{background:#fef3c7;color:#92400e}
+.badge.ok{background:#d1fae5;color:#065f46}
+.badge.danger{background:#fee2e2;color:#991b1b}
+
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+.flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.muted{color:var(--gray-500);font-size:12px}
+
+/* プログレスバー */
+.pbar-wrap{background:var(--gray-100);border-radius:999px;height:8px;overflow:hidden}
+.pbar{height:100%;background:linear-gradient(90deg,var(--success),#22c55e);border-radius:999px;transition:width .3s}
+.pbar.warn{background:linear-gradient(90deg,var(--accent),#fbbf24)}
+.pbar.danger{background:linear-gradient(90deg,var(--danger),#f87171)}
+
+/* 期間フィルタ */
+.period-chip{padding:6px 12px;border:1.5px solid var(--gray-200);background:white;border-radius:999px;
+             font-size:12px;font-weight:600;cursor:pointer;color:var(--gray-500);font-family:inherit}
+.period-chip.active{background:var(--primary);color:white;border-color:var(--primary)}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-title">オットー 店長画面</div>
+  <div class="header-links">
+    <a href="index.html">📸 売上入力</a>
+    <a href="master.html">🗂 マスタ</a>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" onclick="switchTab('dashboard',this)">📊 ダッシュボード</button>
+  <button class="tab" onclick="switchTab('sales',this)">🧾 売上一覧</button>
+  <button class="tab" onclick="switchTab('inventory',this)">📦 在庫</button>
+  <button class="tab" onclick="switchTab('expense',this)">💰 経費</button>
+  <button class="tab" onclick="switchTab('io',this)">📤 取込 / 出力</button>
+</nav>
+
+<main class="main">
+
+<!-- ===== ダッシュボード ===== -->
+<div class="tab-panel active" id="panel-dashboard">
+
+  <div class="card">
+    <div class="section-title">
+      <span>期間</span>
+      <div class="flex">
+        <button class="period-chip active" data-p="today" onclick="setPeriod('today',this)">今日</button>
+        <button class="period-chip" data-p="week" onclick="setPeriod('week',this)">今週</button>
+        <button class="period-chip" data-p="month" onclick="setPeriod('month',this)">今月</button>
+        <button class="period-chip" data-p="all" onclick="setPeriod('all',this)">全期間</button>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi"><div class="label">売上</div><div class="val" id="kpiSale">¥0</div><div class="sub" id="kpiSaleSub">-</div></div>
+      <div class="kpi blue"><div class="label">客数(伝票)</div><div class="val" id="kpiReceipts">0</div><div class="sub" id="kpiReceiptsSub">-</div></div>
+      <div class="kpi blue"><div class="label">客単価</div><div class="val" id="kpiAvg">¥0</div></div>
+      <div class="kpi green"><div class="label">粗利</div><div class="val" id="kpiProfit">¥0</div><div class="sub" id="kpiProfitSub">-</div></div>
+      <div class="kpi amber"><div class="label">原価率</div><div class="val" id="kpiCostRate">-</div></div>
+      <div class="kpi gray"><div class="label">経費</div><div class="val" id="kpiExpense">¥0</div><div class="sub" id="kpiExpenseSub">-</div></div>
+    </div>
+
+    <div style="margin-top:14px;padding:12px;background:var(--gray-50);border-radius:8px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:6px">📈 営業利益（売上 − 原価 − 経費）</div>
+      <div style="font-size:28px;font-weight:800;color:var(--primary)" id="kpiNet">¥0</div>
+      <div class="muted" id="kpiNetSub" style="margin-top:2px">-</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">🏆 商品別 売上ランキング</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>商品名</th><th class="num">数量</th><th class="num">売上</th><th class="num">粗利</th><th class="num">原価率</th></tr></thead>
+        <tbody id="rankBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">
+      <span>📦 在庫アラート</span>
+      <button class="btn btn-ghost btn-small" onclick="switchTabByName('inventory')">在庫画面へ →</button>
+    </div>
+    <div id="alertList"></div>
+  </div>
+
+</div>
+
+<!-- ===== 売上一覧 ===== -->
+<div class="tab-panel" id="panel-sales">
+  <div class="card">
+    <div class="section-title">
+      <span>🧾 売上明細</span>
+      <div class="flex">
+        <input type="date" class="form-control" id="salesFromDate" style="width:auto">
+        <span>〜</span>
+        <input type="date" class="form-control" id="salesToDate" style="width:auto">
+        <button class="btn btn-ghost btn-small" onclick="renderSalesList()">絞込</button>
+        <button class="btn btn-primary btn-small" onclick="exportSalesCsv()">CSV出力</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>日付</th><th>伝票</th><th>商品</th><th class="num">数量</th>
+          <th class="num">売価</th><th class="num">売上</th><th class="num">原価</th>
+          <th class="num">粗利</th><th>担当</th><th>備考</th><th></th>
+        </tr></thead>
+        <tbody id="salesBody"></tbody>
+      </table>
+    </div>
+    <div class="muted" id="salesMeta" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- ===== 在庫 ===== -->
+<div class="tab-panel" id="panel-inventory">
+  <div class="card">
+    <div class="section-title">
+      <span>📦 在庫管理</span>
+      <div class="flex">
+        <button class="btn btn-ghost btn-small" onclick="resetInventoryMonth()">月次リセット</button>
+        <span class="muted">集計開始: <span id="invResetDate">-</span></span>
+      </div>
+    </div>
+    <div class="muted" style="margin-bottom:10px">
+      「累計使用量」= 集計開始日以降の売上に基づく自動計算。月初に棚卸し→「月次リセット」で初期在庫を更新してください。
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>食材名</th><th>単位</th><th class="num">初期在庫</th><th class="num">仕入</th>
+          <th class="num">使用量</th><th class="num">現在庫</th><th class="num">発注点</th>
+          <th>状態</th><th></th>
+        </tr></thead>
+        <tbody id="invBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 経費 ===== -->
+<div class="tab-panel" id="panel-expense">
+  <div class="card">
+    <div class="section-title">💰 経費を追加</div>
+    <div class="form-row">
+      <div><label class="form-label">日付</label><input type="date" class="form-control" id="eDate"></div>
+      <div><label class="form-label">科目</label>
+        <select class="form-control" id="eCategory">
+          <option>家賃</option><option>人件費</option><option>仕入</option><option>水道光熱費</option>
+          <option>広告費</option><option>消耗品費</option><option>通信費</option><option>雑費</option>
+        </select>
+      </div>
+      <div><label class="form-label">金額</label><input type="number" class="form-control" id="eAmount" placeholder="0"></div>
+      <div><label class="form-label">支払方法</label>
+        <select class="form-control" id="ePay"><option>現金</option><option>カード</option><option>振込</option><option>口座引落</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div style="grid-column:1/-1"><label class="form-label">内容</label><input type="text" class="form-control" id="eDesc" placeholder="例: 東京電力 4月分"></div>
+    </div>
+    <button class="btn btn-primary" onclick="addExpense()">経費を追加</button>
+  </div>
+
+  <div class="card">
+    <div class="section-title"><span>経費一覧</span><button class="btn btn-ghost btn-small" onclick="exportExpenseCsv()">CSV出力</button></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>日付</th><th>科目</th><th>内容</th><th class="num">金額</th><th>支払</th><th></th></tr></thead>
+        <tbody id="expenseBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 取込 / 出力 ===== -->
+<div class="tab-panel" id="panel-io">
+  <div class="card">
+    <div class="section-title">☁️ クラウド(Googleドライブ)から受信</div>
+    <div class="muted" style="margin-bottom:10px">
+      スタッフが「📤 管理者に送信」したデータは <b>マイドライブ/オットー送信データ/sales/</b> に保存されています。<br>
+      そこから未取込のJSONをダウンロードし、下の取込エリアにドロップしてください。
+    </div>
+    <div class="btn-row">
+      <a href="https://drive.google.com/drive/search?q=オットー送信データ" target="_blank" class="btn btn-blue">📁 Googleドライブを開く</a>
+      <button class="btn btn-ghost" onclick="pullMasterFromCloudAdmin()">☁️ マスタを再取得</button>
+    </div>
+    <div id="pullStatus" class="muted" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">📥 JSONを取込</div>
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <div class="icon">📂</div>
+      <div style="font-weight:700">ここにJSONをドロップ or クリックで選択</div>
+      <div class="muted" style="margin-top:4px">otto_sales_*.json / otto_expenses_*.json / オフライン出力JSON も対応</div>
+      <input type="file" id="fileInput" multiple accept=".json" style="display:none" onchange="handleFiles(this.files)">
+    </div>
+    <div id="importLog" style="margin-top:12px"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">📤 データ一括出力</div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="exportSalesCsv()">売上CSV</button>
+      <button class="btn btn-primary" onclick="exportExpenseCsv()">経費CSV</button>
+      <button class="btn btn-ghost" onclick="exportBackupJson()">全データJSON（バックアップ）</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">⚠️ 危険な操作</div>
+    <div class="btn-row">
+      <button class="btn btn-danger btn-small" onclick="clearSales()">売上データを全削除</button>
+      <button class="btn btn-danger btn-small" onclick="clearExpenses()">経費データを全削除</button>
+      <button class="btn btn-danger btn-small" onclick="factoryReset()">完全リセット（マスタ含む）</button>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script src="otto-api.js"></script>
+<script>
+// ================================================================
+// localStorage キー
+// ================================================================
+const LS_SALES     = 'otto_sales_v1';
+const LS_PRODUCTS  = 'otto_products_v1';
+const LS_RECIPES   = 'otto_recipes_v1';
+const LS_INVENTORY = 'otto_inventory_v1';
+const LS_EXPENSES  = 'otto_expenses_v1';
+const LS_INV_RESET = 'otto_inv_reset_date_v1';
+
+let sales     = loadLS(LS_SALES, []);
+let products  = loadLS(LS_PRODUCTS, []);
+let recipes   = loadLS(LS_RECIPES, []);
+let inventory = loadLS(LS_INVENTORY, []);
+let expenses  = loadLS(LS_EXPENSES, []);
+let currentPeriod = 'today';
+
+// ================================================================
+// 起動
+// ================================================================
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('eDate').valueAsDate = new Date();
+  setupDropZone();
+  setupSalesDateDefaults();
+  renderDashboard();
+  renderInvResetDate();
+});
+
+// ================================================================
+// クラウドからマスタ再取得
+// ================================================================
+async function pullMasterFromCloudAdmin() {
+  const status = document.getElementById('pullStatus');
+  status.innerHTML = '取得中...';
+  try {
+    const { data, cached } = await OTTO.master.fetch();
+    if (Array.isArray(data.products))  { products  = data.products;  saveLS(LS_PRODUCTS,  products);  }
+    if (Array.isArray(data.recipes))   { recipes   = data.recipes;   saveLS(LS_RECIPES,   recipes);   }
+    if (Array.isArray(data.inventory)) { inventory = data.inventory; saveLS(LS_INVENTORY, inventory); }
+    if (data.invResetDate) localStorage.setItem(LS_INV_RESET, data.invResetDate);
+    renderDashboard();
+    renderInventory();
+    renderInvResetDate();
+    status.innerHTML = `<span style="color:#15803d">✅ 取得完了 (商品${products.length}/レシピ${recipes.length}/在庫${inventory.length})${cached ? ' ※キャッシュ' : ''}</span>`;
+  } catch (err) {
+    status.innerHTML = `<span style="color:#991b1b">❌ 取得失敗: ${err.message}</span>`;
+  }
+}
+
+function loadLS(k, fb) { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } }
+function saveLS(k, d)  { localStorage.setItem(k, JSON.stringify(d)); }
+
+// ================================================================
+// 期間フィルタ
+// ================================================================
+function setPeriod(p, btn) {
+  currentPeriod = p;
+  document.querySelectorAll('.period-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderDashboard();
+}
+function periodRange() {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
+  if (currentPeriod === 'today') {
+    const s = `${y}-${pad(m+1)}-${pad(d)}`;
+    return { from: s, to: s };
+  }
+  if (currentPeriod === 'week') {
+    const dow = now.getDay(); // 0=日
+    const start = new Date(y, m, d - dow);
+    return { from: fmt(start), to: fmt(now) };
+  }
+  if (currentPeriod === 'month') {
+    return { from: `${y}-${pad(m+1)}-01`, to: fmt(new Date(y, m+1, 0)) };
+  }
+  return { from: '0000-01-01', to: '9999-12-31' };
+}
+function pad(n) { return String(n).padStart(2,'0'); }
+function fmt(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+
+// ================================================================
+// ダッシュボード
+// ================================================================
+function renderDashboard() {
+  const { from, to } = periodRange();
+  const rows = sales.filter(s => s.date >= from && s.date <= to);
+  const exps = expenses.filter(e => e.date >= from && e.date <= to);
+
+  const sale   = sum(rows, 'sale');
+  const cost   = sum(rows, 'cost');
+  const profit = sum(rows, 'profit');
+  const expTot = sum(exps, 'amount');
+  const net    = sale - cost - expTot;
+  const receipts = new Set(rows.map(r => r.date+'|'+r.receiptNo)).size;
+  const avg    = receipts ? sale/receipts : 0;
+
+  set('kpiSale',   yen(sale));
+  set('kpiSaleSub',`${rows.length}明細 / ${receipts}伝票`);
+  set('kpiReceipts', receipts.toString());
+  set('kpiReceiptsSub', currentPeriod==='today'?'今日':currentPeriod==='week'?'今週':currentPeriod==='month'?'今月':'全期間');
+  set('kpiAvg',    yen(Math.round(avg)));
+  set('kpiProfit', yen(profit));
+  set('kpiProfitSub', sale>0 ? `粗利率 ${(profit/sale*100).toFixed(1)}%` : '-');
+  set('kpiCostRate', sale>0 ? (cost/sale*100).toFixed(1)+'%' : '-');
+  set('kpiExpense', yen(expTot));
+  set('kpiExpenseSub', exps.length + '件');
+  set('kpiNet',    yen(net));
+  set('kpiNetSub', sale>0 ? `営業利益率 ${(net/sale*100).toFixed(1)}%` : '経費が売上を超えています');
+
+  renderRanking(rows);
+  renderAlerts();
+}
+
+function renderRanking(rows) {
+  const g = {};
+  rows.forEach(r => {
+    (g[r.product] ||= { product:r.product, qty:0, sale:0, cost:0, profit:0 });
+    g[r.product].qty    += r.qty;
+    g[r.product].sale   += r.sale;
+    g[r.product].cost   += r.cost;
+    g[r.product].profit += r.profit;
+  });
+  const list = Object.values(g).sort((a,b) => b.sale - a.sale).slice(0, 10);
+  const body = document.getElementById('rankBody');
+  if (!list.length) { body.innerHTML = `<tr><td colspan="6" class="muted" style="text-align:center;padding:20px">データなし</td></tr>`; return; }
+  body.innerHTML = list.map((it,i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td>${escHtml(it.product)}</td>
+      <td class="num">${it.qty}</td>
+      <td class="num red">${yen(it.sale)}</td>
+      <td class="num">${yen(it.profit)}</td>
+      <td class="num">${it.sale>0?((it.cost/it.sale*100).toFixed(1)+'%'):'-'}</td>
+    </tr>`).join('');
+}
+
+function renderAlerts() {
+  renderInventory();  // 在庫表を先に計算しておく
+  const alerts = inventory
+    .map(inv => ({ ...inv, current: inv.initial + (inv.purchased||0) - calcUsage(inv.name) }))
+    .filter(inv => inv.current <= inv.reorderPoint);
+  const el = document.getElementById('alertList');
+  if (!alerts.length) { el.innerHTML = `<div class="muted" style="padding:8px 0">✅ 発注アラートなし</div>`; return; }
+  el.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>食材</th><th class="num">現在庫</th><th class="num">発注点</th><th>状態</th></tr></thead>
+    <tbody>${alerts.map(a => `
+      <tr class="${a.current<=0?'danger':'warn'}">
+        <td>${escHtml(a.name)}</td>
+        <td class="num">${fmtNum(a.current)} ${escHtml(a.unit)}</td>
+        <td class="num">${fmtNum(a.reorderPoint)} ${escHtml(a.unit)}</td>
+        <td><span class="badge ${a.current<=0?'danger':'warn'}">${a.current<=0?'在庫切れ':'要発注'}</span></td>
+      </tr>`).join('')}</tbody></table></div>`;
+}
+
+function sum(arr, k) { return arr.reduce((a,b) => a + (Number(b[k])||0), 0); }
+function yen(n) { return '¥' + Math.round(n).toLocaleString(); }
+function fmtNum(n) { return Math.round(n*10)/10; }
+function set(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
+
+// ================================================================
+// 売上一覧
+// ================================================================
+function setupSalesDateDefaults() {
+  const now = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth(), 1);
+  document.getElementById('salesFromDate').value = fmt(first);
+  document.getElementById('salesToDate').value = fmt(now);
+}
+function renderSalesList() {
+  const from = document.getElementById('salesFromDate').value || '0000-01-01';
+  const to   = document.getElementById('salesToDate').value   || '9999-12-31';
+  const rows = sales.filter(s => s.date >= from && s.date <= to)
+                    .sort((a,b) => (b.date+b.receiptNo).localeCompare(a.date+a.receiptNo));
+  const body = document.getElementById('salesBody');
+  body.innerHTML = rows.map(r => `
+    <tr class="${r.matched?'':'warn'}">
+      <td>${escHtml(r.date)}</td>
+      <td>${escHtml(r.receiptNo)}</td>
+      <td>${escHtml(r.product)} ${!r.matched ? '<span class="badge warn">要確認</span>' : ''}</td>
+      <td class="num">${r.qty}</td>
+      <td class="num">${yen(r.unitPrice)}</td>
+      <td class="num red">${yen(r.sale)}</td>
+      <td class="num">${yen(r.cost)}</td>
+      <td class="num">${yen(r.profit)}</td>
+      <td>${escHtml(r.staff)}</td>
+      <td class="muted" style="font-size:11px">${escHtml(r.note || '')}</td>
+      <td><button class="small-link" onclick="deleteSale('${escAttr(r.id)}')">削除</button></td>
+    </tr>`).join('');
+  document.getElementById('salesMeta').textContent =
+    `${rows.length}件 / 売上計 ${yen(sum(rows,'sale'))} / 粗利計 ${yen(sum(rows,'profit'))}`;
+}
+function deleteSale(id) {
+  if (!confirm('この行を削除しますか？')) return;
+  sales = sales.filter(s => s.id !== id);
+  saveLS(LS_SALES, sales);
+  renderSalesList();
+  renderDashboard();
+}
+
+// ================================================================
+// 在庫
+// ================================================================
+function calcUsage(ingredient) {
+  if (!recipes.length) return 0;
+  const resetDate = localStorage.getItem(LS_INV_RESET) || '0000-01-01';
+  const relevantSales = sales.filter(s => s.date >= resetDate);
+  // 各レシピ行: 使用量/1食 × (その商品の販売数量合計)
+  return recipes
+    .filter(r => r.ingredient === ingredient)
+    .reduce((total, r) => {
+      const qtySold = relevantSales.filter(s => s.product === r.product)
+                                    .reduce((a,s) => a + (s.qty||0), 0);
+      return total + (r.usage||0) * qtySold;
+    }, 0);
+}
+function renderInventory() {
+  const body = document.getElementById('invBody');
+  if (!body) return;
+  if (!inventory.length) { body.innerHTML = `<tr><td colspan="9" class="muted" style="text-align:center;padding:20px">在庫データなし。master.html で登録してください</td></tr>`; return; }
+  body.innerHTML = inventory.map((inv, i) => {
+    const usage = calcUsage(inv.name);
+    const current = (Number(inv.initial)||0) + (Number(inv.purchased)||0) - usage;
+    const ratio = inv.reorderPoint>0 ? current/inv.reorderPoint : 1;
+    const state = current<=0 ? {cls:'danger', txt:'在庫切れ'}
+                : current<=inv.reorderPoint ? {cls:'warn', txt:'要発注'}
+                : {cls:'ok', txt:'OK'};
+    return `
+      <tr class="${state.cls==='danger'?'danger':state.cls==='warn'?'warn':''}">
+        <td>${escHtml(inv.name)}</td>
+        <td>${escHtml(inv.unit||'')}</td>
+        <td class="num"><input type="number" value="${inv.initial||0}" style="width:80px;padding:4px;border:1px solid var(--gray-200);border-radius:4px" onchange="updateInv(${i},'initial',this.value)"></td>
+        <td class="num"><input type="number" value="${inv.purchased||0}" style="width:80px;padding:4px;border:1px solid var(--gray-200);border-radius:4px" onchange="updateInv(${i},'purchased',this.value)"></td>
+        <td class="num">${fmtNum(usage)}</td>
+        <td class="num"><b>${fmtNum(current)}</b></td>
+        <td class="num"><input type="number" value="${inv.reorderPoint||0}" style="width:80px;padding:4px;border:1px solid var(--gray-200);border-radius:4px" onchange="updateInv(${i},'reorderPoint',this.value)"></td>
+        <td><span class="badge ${state.cls}">${state.txt}</span></td>
+        <td><button class="small-link" onclick="deleteInv(${i})">削除</button></td>
+      </tr>`;
+  }).join('');
+}
+function updateInv(i, k, v) {
+  inventory[i][k] = Number(v) || 0;
+  saveLS(LS_INVENTORY, inventory);
+  renderInventory();
+  renderDashboard();
+}
+function deleteInv(i) {
+  if (!confirm(inventory[i].name + ' を削除しますか？')) return;
+  inventory.splice(i, 1);
+  saveLS(LS_INVENTORY, inventory);
+  renderInventory();
+}
+function resetInventoryMonth() {
+  if (!confirm('月次リセットを実行します。\n\n1. 現在の「現在庫」を新しい「初期在庫」に設定\n2. 仕入・集計開始日をリセット\n\n続行しますか？')) return;
+  inventory = inventory.map(inv => {
+    const usage = calcUsage(inv.name);
+    const current = (Number(inv.initial)||0) + (Number(inv.purchased)||0) - usage;
+    return { ...inv, initial: Math.max(0, Math.round(current*10)/10), purchased: 0 };
+  });
+  saveLS(LS_INVENTORY, inventory);
+  localStorage.setItem(LS_INV_RESET, fmt(new Date()));
+  renderInventory();
+  renderInvResetDate();
+  renderDashboard();
+  alert('月次リセット完了');
+}
+function renderInvResetDate() {
+  document.getElementById('invResetDate').textContent = localStorage.getItem(LS_INV_RESET) || '未設定（全期間集計中）';
+}
+
+// ================================================================
+// 経費
+// ================================================================
+function addExpense() {
+  const date = document.getElementById('eDate').value;
+  const category = document.getElementById('eCategory').value;
+  const amount = Number(document.getElementById('eAmount').value) || 0;
+  const pay = document.getElementById('ePay').value;
+  const desc = document.getElementById('eDesc').value.trim();
+  if (!date || !amount) { alert('日付と金額は必須です'); return; }
+  expenses.push({ id:Date.now()+'-'+Math.random().toString(36).slice(2,6), date, category, amount, pay, desc });
+  saveLS(LS_EXPENSES, expenses);
+  document.getElementById('eAmount').value = '';
+  document.getElementById('eDesc').value = '';
+  renderExpenses();
+  renderDashboard();
+}
+function renderExpenses() {
+  const body = document.getElementById('expenseBody');
+  if (!body) return;
+  const sorted = [...expenses].sort((a,b) => b.date.localeCompare(a.date));
+  if (!sorted.length) { body.innerHTML = `<tr><td colspan="6" class="muted" style="text-align:center;padding:20px">経費データなし</td></tr>`; return; }
+  body.innerHTML = sorted.map(e => `
+    <tr>
+      <td>${escHtml(e.date)}</td>
+      <td>${escHtml(e.category)}</td>
+      <td>${escHtml(e.desc||'')}</td>
+      <td class="num red">${yen(e.amount)}</td>
+      <td>${escHtml(e.pay||'')}</td>
+      <td><button class="small-link" onclick="deleteExp('${escAttr(e.id)}')">削除</button></td>
+    </tr>`).join('');
+}
+function deleteExp(id) {
+  if (!confirm('削除しますか？')) return;
+  expenses = expenses.filter(e => e.id !== id);
+  saveLS(LS_EXPENSES, expenses);
+  renderExpenses();
+  renderDashboard();
+}
+
+// ================================================================
+// JSON取込
+// ================================================================
+function setupDropZone() {
+  const dz = document.getElementById('dropZone');
+  ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('drag'); }));
+  dz.addEventListener('drop', e => handleFiles(e.dataTransfer.files));
+}
+async function handleFiles(files) {
+  const log = document.getElementById('importLog');
+  log.innerHTML = '';
+  for (const f of files) {
+    try {
+      const text = await f.text();
+      const data = JSON.parse(text);
+      const result = importData(data, f.name);
+      log.innerHTML += `<div class="banner success show" style="display:block">✅ ${escHtml(f.name)}: ${escHtml(result)}</div>`;
+    } catch (err) {
+      log.innerHTML += `<div class="banner error show" style="display:block">❌ ${escHtml(f.name)}: ${escHtml(err.message)}</div>`;
+    }
+  }
+  renderDashboard();
+  renderSalesList();
+  renderExpenses();
+  renderInventory();
+}
+function importData(data, fileName) {
+  // Drive 保存形式: {kind:'sales'|'expenses', records:[...]} を sales/expenses に正規化
+  if (data.kind === 'sales' && Array.isArray(data.records)) {
+    data = { ...data, sales: data.records };
+  } else if (data.kind === 'expenses' && Array.isArray(data.records)) {
+    data = { ...data, expenses: data.records };
+  }
+
+  // 売上データ
+  if (Array.isArray(data.sales)) {
+    const before = sales.length;
+    const existingIds = new Set(sales.map(s => s.id));
+    const newOnes = data.sales.filter(s => !existingIds.has(s.id));
+    sales.push(...newOnes);
+    saveLS(LS_SALES, sales);
+    return `売上 ${newOnes.length}件 追加（既存${before}件→${sales.length}件）`;
+  }
+  // 経費データ (Drive保存形式)
+  if (Array.isArray(data.expenses)) {
+    const before = expenses.length;
+    const existingIds = new Set(expenses.map(e => e.id));
+    const newOnes = data.expenses.filter(e => !existingIds.has(e.id));
+    expenses.push(...newOnes);
+    saveLS(LS_EXPENSES, expenses);
+    return `経費 ${newOnes.length}件 追加（既存${before}件→${expenses.length}件）`;
+  }
+  // 商品マスタ
+  if (Array.isArray(data.products)) {
+    products = data.products;
+    saveLS(LS_PRODUCTS, products);
+    return `商品マスタ ${products.length}件 を上書き`;
+  }
+  // レシピ
+  if (Array.isArray(data.recipes)) {
+    recipes = data.recipes;
+    saveLS(LS_RECIPES, recipes);
+    return `レシピ ${recipes.length}行 を上書き`;
+  }
+  // 在庫
+  if (Array.isArray(data.inventory)) {
+    inventory = data.inventory;
+    saveLS(LS_INVENTORY, inventory);
+    return `在庫 ${inventory.length}品目 を上書き`;
+  }
+  // 全バックアップ
+  if (data.backup) {
+    if (data.sales) { sales = data.sales; saveLS(LS_SALES, sales); }
+    if (data.products) { products = data.products; saveLS(LS_PRODUCTS, products); }
+    if (data.recipes) { recipes = data.recipes; saveLS(LS_RECIPES, recipes); }
+    if (data.inventory) { inventory = data.inventory; saveLS(LS_INVENTORY, inventory); }
+    if (data.expenses) { expenses = data.expenses; saveLS(LS_EXPENSES, expenses); }
+    return '全データ復元';
+  }
+  throw new Error('不明なJSON形式');
+}
+
+// ================================================================
+// CSV / JSON 出力
+// ================================================================
+function toCsv(rows) {
+  return rows.map(r => r.map(c => {
+    const s = String(c ?? '');
+    return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+  }).join(',')).join('\n');
+}
+function download(fname, content, mime='text/csv') {
+  const blob = new Blob(['\uFEFF'+content], { type: mime + ';charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fname; a.click();
+  URL.revokeObjectURL(url);
+}
+function exportSalesCsv() {
+  if (!sales.length) { alert('データなし'); return; }
+  const header = ['日付','伝票番号','商品名','数量','単価','売上金額','原価','粗利','担当','備考'];
+  const rows = [...sales].sort((a,b)=>(a.date+a.receiptNo).localeCompare(b.date+b.receiptNo))
+    .map(s => [s.date, s.receiptNo, s.product, s.qty, s.unitPrice, s.sale, s.cost, s.profit, s.staff, s.note||'']);
+  download(`otto_sales_${fmt(new Date())}.csv`, toCsv([header, ...rows]));
+}
+function exportExpenseCsv() {
+  if (!expenses.length) { alert('データなし'); return; }
+  const header = ['日付','科目','内容','金額','支払方法'];
+  const rows = [...expenses].sort((a,b)=>a.date.localeCompare(b.date))
+    .map(e => [e.date, e.category, e.desc, e.amount, e.pay]);
+  download(`otto_expenses_${fmt(new Date())}.csv`, toCsv([header, ...rows]));
+}
+function exportBackupJson() {
+  const payload = { backup:true, exported:new Date().toISOString(), sales, products, recipes, inventory, expenses };
+  download(`otto_backup_${fmt(new Date())}.json`, JSON.stringify(payload, null, 2), 'application/json');
+}
+
+// ================================================================
+// 削除系
+// ================================================================
+function clearSales()    { if (confirm('売上データを全削除します。元に戻せません。続行しますか？')) { sales=[]; saveLS(LS_SALES,sales); renderDashboard(); renderSalesList(); alert('削除完了'); } }
+function clearExpenses() { if (confirm('経費データを全削除します。続行しますか？')) { expenses=[]; saveLS(LS_EXPENSES,expenses); renderDashboard(); renderExpenses(); alert('削除完了'); } }
+function factoryReset()  {
+  if (!confirm('⚠️ 全データ（売上・経費・マスタ・レシピ・在庫）を消去します。本当に実行しますか？')) return;
+  if (!confirm('最終確認：本当に全て消去しますか？')) return;
+  [LS_SALES, LS_PRODUCTS, LS_RECIPES, LS_INVENTORY, LS_EXPENSES, LS_INV_RESET].forEach(k => localStorage.removeItem(k));
+  location.reload();
+}
+
+// ================================================================
+// タブ切替
+// ================================================================
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'sales')     renderSalesList();
+  if (name === 'inventory') renderInventory();
+  if (name === 'expense')   renderExpenses();
+}
+function switchTabByName(name) {
+  const btn = [...document.querySelectorAll('.tab')].find(t => t.textContent.includes(
+    name==='dashboard'?'ダッシュボード':name==='sales'?'売上':name==='inventory'?'在庫':name==='expense'?'経費':'取込'
+  ));
+  switchTab(name, btn);
+}
+
+function escHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escAttr(s) { return escHtml(s).replace(/"/g, '&quot;'); }
+</script>
+</body>
+</html>

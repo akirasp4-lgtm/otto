@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>オットー マスタ管理</title>
+<meta name="theme-color" content="#b91c1c">
+<style>
+:root{
+  --primary:#b91c1c;--primary-light:#fef2f2;--accent:#f59e0b;
+  --success:#16a34a;--danger:#dc2626;--blue:#2563eb;
+  --gray-50:#f9fafb;--gray-100:#f3f4f6;--gray-200:#e5e7eb;--gray-300:#d1d5db;
+  --gray-400:#9ca3af;--gray-500:#6b7280;--gray-700:#374151;--gray-800:#1f2937;
+  --shadow:0 1px 3px rgba(0,0,0,.1);--r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
+     background:#f5f5f4;color:var(--gray-800);min-height:100vh}
+
+.app-header{background:#1f2937;color:white;padding:0 16px;height:56px;display:flex;align-items:center;
+            justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
+.app-title{font-size:16px;font-weight:700;display:flex;align-items:center;gap:6px}
+.app-title::before{content:"🗂"}
+.header-links{display:flex;gap:6px}
+.header-links a{font-size:11px;padding:6px 10px;border:1px solid #374151;border-radius:6px;
+                background:#374151;color:white;text-decoration:none;white-space:nowrap}
+
+.tabs{background:white;padding:0 16px;display:flex;gap:0;border-bottom:1px solid var(--gray-200);
+      overflow-x:auto;position:sticky;top:56px;z-index:90}
+.tab{padding:12px 16px;border:none;background:none;font-size:14px;font-weight:600;color:var(--gray-500);
+     cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;font-family:inherit}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+
+.main{max-width:1100px;margin:0 auto;padding:16px 12px;display:flex;flex-direction:column;gap:14px}
+.card{background:white;border-radius:var(--r);box-shadow:var(--shadow);padding:16px}
+.section-title{font-size:16px;font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--gray-100);padding:10px 8px;text-align:left;font-weight:700;color:var(--gray-700);border-bottom:1px solid var(--gray-200);white-space:nowrap}
+td{padding:6px 8px;border-bottom:1px solid var(--gray-100);vertical-align:middle}
+td input,td select{padding:6px 8px;border:1px solid var(--gray-200);border-radius:4px;font-size:13px;width:100%;font-family:inherit;background:white}
+td input[type=number]{text-align:right}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+
+.btn{padding:10px 16px;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-primary{background:var(--primary);color:white}
+.btn-blue{background:var(--blue);color:white}
+.btn-green{background:var(--success);color:white}
+.btn-ghost{background:white;color:var(--gray-700);border:1px solid var(--gray-300)}
+.btn-danger{background:var(--danger);color:white}
+.btn-small{padding:6px 10px;font-size:12px}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+
+.del-btn{background:#fee2e2;color:#991b1b;border:none;border-radius:4px;padding:6px 10px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit}
+
+.form-label{display:block;font-size:11px;font-weight:700;color:var(--gray-500);margin-bottom:4px;text-transform:uppercase}
+.form-control{width:100%;padding:10px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:14px;outline:none;font-family:inherit}
+
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+.muted{color:var(--gray-500);font-size:12px}
+.banner{padding:10px 12px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:12px}
+.banner.info{background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe}
+.banner.warn{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+
+.summary-pill{display:inline-block;padding:4px 10px;background:var(--gray-100);border-radius:999px;font-size:12px;font-weight:700;color:var(--gray-700);margin-right:6px}
+.summary-pill b{color:var(--primary)}
+
+.recipe-group{border:1px solid var(--gray-200);border-radius:8px;padding:10px;margin-bottom:10px;background:var(--gray-50)}
+.recipe-group .rg-head{display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:6px}
+.recipe-group .rg-head .cost-tag{font-size:11px;color:var(--primary);background:white;padding:3px 8px;border-radius:999px;font-weight:700}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-title">オットー マスタ管理</div>
+  <div class="header-links">
+    <a href="index.html">📸 売上入力</a>
+    <a href="admin.html">📊 店長</a>
+  </div>
+</header>
+
+<div style="max-width:1100px;margin:12px auto 0;padding:0 12px">
+  <div class="banner info" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+    <div>☁️ <b>マスタの正式な保管場所はGoogleスプレッドシートです。</b>ここはローカル確認・編集用。</div>
+    <button class="btn btn-blue btn-small" onclick="pullMasterFromCloud()" id="pullBtn">☁️ クラウドから取得</button>
+  </div>
+  <div id="pullStatus" style="font-size:12px;margin-top:4px"></div>
+</div>
+
+<nav class="tabs">
+  <button class="tab active" onclick="switchTab('products',this)">🍝 商品マスタ</button>
+  <button class="tab" onclick="switchTab('recipes',this)">📝 レシピ原価</button>
+  <button class="tab" onclick="switchTab('inventory',this)">📦 在庫（初期登録）</button>
+  <button class="tab" onclick="switchTab('io',this)">📤 配布 / 取込</button>
+</nav>
+
+<main class="main">
+
+<!-- ===== 商品マスタ ===== -->
+<div class="tab-panel active" id="panel-products">
+  <div class="card">
+    <div class="section-title">
+      <span>🍝 商品マスタ</span>
+      <div class="btn-row">
+        <span class="summary-pill"><b id="prodCount">0</b> 品目</span>
+        <button class="btn btn-green btn-small" onclick="addProduct()">＋ 商品追加</button>
+        <button class="btn btn-ghost btn-small" onclick="loadDefaults('products')">サンプル読込</button>
+      </div>
+    </div>
+    <div class="banner info">💡 <b>原価は自動計算</b>：レシピ原価タブに食材を登録すると、(使用量×仕入単価) の合計が反映されます。</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>コード</th><th>商品名</th><th class="num">売価</th>
+          <th class="num">原価(自動)</th><th class="num">原価率</th>
+          <th>カテゴリ</th><th></th>
+        </tr></thead>
+        <tbody id="productBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== レシピ原価 ===== -->
+<div class="tab-panel" id="panel-recipes">
+  <div class="card">
+    <div class="section-title">
+      <span>📝 レシピ原価表</span>
+      <div class="btn-row">
+        <span class="summary-pill"><b id="recCount">0</b> 行</span>
+        <button class="btn btn-ghost btn-small" onclick="loadDefaults('recipes')">サンプル読込</button>
+      </div>
+    </div>
+    <div class="banner info">💡 商品ごとに「食材 × 使用量 × 仕入単価」を登録。ここが正確だと利益が正確に見えます。</div>
+    <div id="recipeGroups"></div>
+  </div>
+</div>
+
+<!-- ===== 在庫 ===== -->
+<div class="tab-panel" id="panel-inventory">
+  <div class="card">
+    <div class="section-title">
+      <span>📦 在庫マスタ（初期登録）</span>
+      <div class="btn-row">
+        <span class="summary-pill"><b id="invCount">0</b> 品目</span>
+        <button class="btn btn-blue btn-small" onclick="syncFromRecipes()">🔄 レシピから食材を追加</button>
+        <button class="btn btn-ghost btn-small" onclick="loadDefaults('inventory')">サンプル読込</button>
+      </div>
+    </div>
+    <div class="banner info">💡 ここは初期登録用。日々の使用量は売上データから自動計算され、<b>店長画面の在庫タブ</b>で確認できます。</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>食材名</th><th>単位</th><th class="num">初期在庫</th>
+          <th class="num">発注点</th><th></th>
+        </tr></thead>
+        <tbody id="invBody"></tbody>
+      </table>
+    </div>
+    <button class="btn btn-green btn-small" style="margin-top:10px" onclick="addInventoryRow()">＋ 食材追加</button>
+  </div>
+</div>
+
+<!-- ===== 配布 / 取込 ===== -->
+<div class="tab-panel" id="panel-io">
+  <div class="card">
+    <div class="section-title">📤 マスタを配布する（スタッフ端末へ）</div>
+    <div class="muted" style="margin-bottom:10px">
+      JSONファイルに書き出して、LINE/メール/AirDrop などでスタッフ端末に送信。<br>
+      受信した端末で <b>index.html</b> を開き、ブラウザでファイルを選ぶと自動で取り込まれます…ではなく、<b>admin.html の「取込」タブ</b>にドロップして取り込みます。
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="exportJson('products')">🍝 商品マスタJSON</button>
+      <button class="btn btn-primary" onclick="exportJson('recipes')">📝 レシピJSON</button>
+      <button class="btn btn-primary" onclick="exportJson('inventory')">📦 在庫JSON</button>
+      <button class="btn btn-green" onclick="exportAllMaster()">📦 まとめて出力</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">📥 マスタを取込</div>
+    <input type="file" id="fileInput" accept=".json" multiple onchange="handleFiles(this.files)" style="padding:8px">
+    <div id="importLog" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">⚠️ マスタを初期化</div>
+    <div class="btn-row">
+      <button class="btn btn-danger btn-small" onclick="clearAll('products')">商品マスタ全削除</button>
+      <button class="btn btn-danger btn-small" onclick="clearAll('recipes')">レシピ全削除</button>
+      <button class="btn btn-danger btn-small" onclick="clearAll('inventory')">在庫全削除</button>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script src="otto-api.js"></script>
+<script>
+const LS_PRODUCTS  = 'otto_products_v1';
+const LS_RECIPES   = 'otto_recipes_v1';
+const LS_INVENTORY = 'otto_inventory_v1';
+const LS_INV_RESET = 'otto_inv_reset_date_v1';
+
+let products  = loadLS(LS_PRODUCTS, []);
+let recipes   = loadLS(LS_RECIPES, []);
+let inventory = loadLS(LS_INVENTORY, []);
+
+window.addEventListener('DOMContentLoaded', () => {
+  // 初回起動ならサンプルロード
+  if (!products.length && !recipes.length && !inventory.length) {
+    products = sampleProducts();
+    recipes = sampleRecipes();
+    inventory = sampleInventory();
+    saveAll();
+  }
+  renderAll();
+});
+
+function loadLS(k, fb) { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } }
+function saveLS(k, d)  { localStorage.setItem(k, JSON.stringify(d)); }
+function saveAll() {
+  saveLS(LS_PRODUCTS, products);
+  saveLS(LS_RECIPES, recipes);
+  saveLS(LS_INVENTORY, inventory);
+}
+function renderAll() {
+  renderProducts();
+  renderRecipes();
+  renderInventory();
+}
+
+// ================================================================
+// 商品マスタ
+// ================================================================
+function renderProducts() {
+  const body = document.getElementById('productBody');
+  document.getElementById('prodCount').textContent = products.length;
+  if (!products.length) { body.innerHTML = `<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">商品がありません。「＋商品追加」か「サンプル読込」で開始</td></tr>`; return; }
+  body.innerHTML = products.map((p, i) => {
+    const cost = calcProductCost(p.name);
+    const rate = p.price > 0 ? (cost / p.price * 100).toFixed(1) + '%' : '-';
+    return `
+    <tr>
+      <td><input type="text" value="${escAttr(p.code||'')}" onchange="updP(${i},'code',this.value)" style="width:80px"></td>
+      <td><input type="text" value="${escAttr(p.name||'')}" onchange="updP(${i},'name',this.value);syncProductInRecipes(${i},this.value)"></td>
+      <td class="num"><input type="number" value="${p.price||0}" onchange="updP(${i},'price',Number(this.value))" style="width:100px"></td>
+      <td class="num">${yen(cost)}</td>
+      <td class="num">${rate}</td>
+      <td><input type="text" value="${escAttr(p.category||'')}" onchange="updP(${i},'category',this.value)" style="width:100px"></td>
+      <td><button class="del-btn" onclick="delP(${i})">削除</button></td>
+    </tr>`;
+  }).join('');
+
+  // 商品マスタに反映した原価を cost フィールドへ保存（売上入力側で使う）
+  products.forEach(p => p.cost = calcProductCost(p.name));
+  saveLS(LS_PRODUCTS, products);
+}
+function addProduct() {
+  products.push({ code:nextCode(), name:'', price:0, cost:0, category:'' });
+  saveLS(LS_PRODUCTS, products);
+  renderProducts();
+}
+function nextCode() {
+  const nums = products.map(p => parseInt((p.code||'').replace(/\D/g,''),10)).filter(n => !isNaN(n));
+  const next = nums.length ? Math.max(...nums)+1 : 1;
+  return 'P' + String(next).padStart(3,'0');
+}
+function updP(i, k, v) {
+  products[i][k] = v;
+  saveLS(LS_PRODUCTS, products);
+  if (k === 'price') renderProducts(); // 原価率更新
+}
+function delP(i) {
+  if (!confirm(`「${products[i].name}」を削除します。レシピ原価の該当行はどうしますか？\n\nOK = 商品だけ削除 / キャンセル = 中止`)) return;
+  products.splice(i,1);
+  saveLS(LS_PRODUCTS, products);
+  renderProducts();
+  renderRecipes();
+}
+function syncProductInRecipes(idx, newName) {
+  // 商品名を書き換えた場合、レシピ原価の該当商品も書き換える
+  const oldName = products[idx].name_before || '';
+  // 簡易：renderProducts 前のスナップショットが無いので、後追いで現状と合わないものを探す
+  // （ユーザーが明示的に名前変更した時のみ呼ばれる）
+  // ここでは最後に編集された商品の旧名が取れないので、レシピ側で商品名のプルダウンを使う前提にし、このsync呼び出しは念のため保持
+}
+function calcProductCost(productName) {
+  return recipes
+    .filter(r => r.product === productName)
+    .reduce((a,r) => a + (Number(r.usage)||0) * (Number(r.unitCost)||0), 0);
+}
+
+// ================================================================
+// レシピ原価
+// ================================================================
+function renderRecipes() {
+  document.getElementById('recCount').textContent = recipes.length;
+  const container = document.getElementById('recipeGroups');
+  if (!products.length) {
+    container.innerHTML = `<div class="banner warn">商品マスタが空です。先に商品を登録してください。</div>`;
+    return;
+  }
+
+  container.innerHTML = products.map((p, pIdx) => {
+    const rows = recipes.map((r, i) => ({...r, _idx:i})).filter(r => r.product === p.name);
+    const total = rows.reduce((a,r) => a + (Number(r.usage)||0) * (Number(r.unitCost)||0), 0);
+    const rate = p.price > 0 ? (total/p.price*100).toFixed(1) + '%' : '-';
+    return `
+      <div class="recipe-group">
+        <div class="rg-head">
+          <div>${escHtml(p.name||'(無名)')} <span class="muted">¥${(p.price||0).toLocaleString()}</span></div>
+          <div><span class="cost-tag">原価 ${yen(total)} / 原価率 ${rate}</span></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>食材名</th><th>単位</th><th class="num">使用量/1食</th><th class="num">仕入単価</th><th class="num">原価</th><th></th></tr></thead>
+            <tbody>
+              ${rows.length ? rows.map(r => `
+                <tr>
+                  <td><input type="text" value="${escAttr(r.ingredient||'')}" onchange="updR(${r._idx},'ingredient',this.value)"></td>
+                  <td><input type="text" value="${escAttr(r.unit||'g')}" onchange="updR(${r._idx},'unit',this.value)" style="width:60px"></td>
+                  <td class="num"><input type="number" step="0.1" value="${r.usage||0}" onchange="updR(${r._idx},'usage',Number(this.value))"></td>
+                  <td class="num"><input type="number" step="0.1" value="${r.unitCost||0}" onchange="updR(${r._idx},'unitCost',Number(this.value))"></td>
+                  <td class="num">${yen((Number(r.usage)||0)*(Number(r.unitCost)||0))}</td>
+                  <td><button class="del-btn" onclick="delR(${r._idx})">×</button></td>
+                </tr>`).join('') : `<tr><td colspan="6" class="muted" style="text-align:center;padding:10px">食材未登録</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+        <button class="btn btn-green btn-small" style="margin-top:8px" onclick="addR('${escAttr(p.name)}')">＋ ${escHtml(p.name)} に食材追加</button>
+      </div>
+    `;
+  }).join('');
+}
+function addR(productName) {
+  recipes.push({ product:productName, ingredient:'', usage:0, unit:'g', unitCost:0 });
+  saveLS(LS_RECIPES, recipes);
+  renderRecipes();
+  renderProducts();
+}
+function updR(i, k, v) {
+  recipes[i][k] = v;
+  saveLS(LS_RECIPES, recipes);
+  renderRecipes();
+  renderProducts();
+}
+function delR(i) {
+  recipes.splice(i, 1);
+  saveLS(LS_RECIPES, recipes);
+  renderRecipes();
+  renderProducts();
+}
+
+// ================================================================
+// 在庫マスタ
+// ================================================================
+function renderInventory() {
+  document.getElementById('invCount').textContent = inventory.length;
+  const body = document.getElementById('invBody');
+  if (!inventory.length) { body.innerHTML = `<tr><td colspan="5" class="muted" style="text-align:center;padding:20px">食材が登録されていません。「レシピから食材を追加」か「＋食材追加」で開始</td></tr>`; return; }
+  body.innerHTML = inventory.map((inv, i) => `
+    <tr>
+      <td><input type="text" value="${escAttr(inv.name||'')}" onchange="updI(${i},'name',this.value)"></td>
+      <td><input type="text" value="${escAttr(inv.unit||'g')}" onchange="updI(${i},'unit',this.value)" style="width:60px"></td>
+      <td class="num"><input type="number" value="${inv.initial||0}" onchange="updI(${i},'initial',Number(this.value))" style="width:100px"></td>
+      <td class="num"><input type="number" value="${inv.reorderPoint||0}" onchange="updI(${i},'reorderPoint',Number(this.value))" style="width:100px"></td>
+      <td><button class="del-btn" onclick="delI(${i})">削除</button></td>
+    </tr>`).join('');
+}
+function addInventoryRow() {
+  inventory.push({ name:'', unit:'g', initial:0, purchased:0, reorderPoint:0 });
+  saveLS(LS_INVENTORY, inventory);
+  renderInventory();
+}
+function updI(i, k, v) {
+  inventory[i][k] = v;
+  saveLS(LS_INVENTORY, inventory);
+}
+function delI(i) {
+  if (!confirm(`「${inventory[i].name}」を削除しますか？`)) return;
+  inventory.splice(i,1);
+  saveLS(LS_INVENTORY, inventory);
+  renderInventory();
+}
+function syncFromRecipes() {
+  const existing = new Set(inventory.map(i => i.name));
+  const ingredients = new Map();
+  recipes.forEach(r => {
+    if (r.ingredient && !existing.has(r.ingredient)) {
+      if (!ingredients.has(r.ingredient)) ingredients.set(r.ingredient, r.unit || 'g');
+    }
+  });
+  let added = 0;
+  ingredients.forEach((unit, name) => {
+    inventory.push({ name, unit, initial:0, purchased:0, reorderPoint:0 });
+    added++;
+  });
+  saveLS(LS_INVENTORY, inventory);
+  renderInventory();
+  alert(added + '品目を追加しました（初期在庫・発注点は0なので設定してください）');
+}
+
+// ================================================================
+// JSON 出力・取込
+// ================================================================
+function exportJson(kind) {
+  const data = kind==='products' ? { products } : kind==='recipes' ? { recipes } : { inventory };
+  const fname = `otto_${kind}_${fmt(new Date())}.json`;
+  download(fname, JSON.stringify(data, null, 2), 'application/json');
+}
+function exportAllMaster() {
+  download(`otto_master_${fmt(new Date())}.json`,
+    JSON.stringify({ master:true, products, recipes, inventory }, null, 2),
+    'application/json');
+}
+async function handleFiles(files) {
+  const log = document.getElementById('importLog');
+  log.innerHTML = '';
+  for (const f of files) {
+    try {
+      const data = JSON.parse(await f.text());
+      const msg = applyImport(data);
+      log.innerHTML += `<div class="banner" style="background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0">✅ ${escHtml(f.name)}: ${escHtml(msg)}</div>`;
+    } catch (err) {
+      log.innerHTML += `<div class="banner" style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca">❌ ${escHtml(f.name)}: ${escHtml(err.message)}</div>`;
+    }
+  }
+  renderAll();
+}
+function applyImport(data) {
+  const parts = [];
+  if (data.master) {
+    if (data.products)  { products = data.products;  parts.push(`商品${products.length}`); }
+    if (data.recipes)   { recipes = data.recipes;    parts.push(`レシピ${recipes.length}`); }
+    if (data.inventory) { inventory = data.inventory;parts.push(`在庫${inventory.length}`); }
+  } else {
+    if (Array.isArray(data.products))  { products = data.products;  parts.push(`商品${products.length}`); }
+    if (Array.isArray(data.recipes))   { recipes = data.recipes;    parts.push(`レシピ${recipes.length}`); }
+    if (Array.isArray(data.inventory)) { inventory = data.inventory;parts.push(`在庫${inventory.length}`); }
+  }
+  if (!parts.length) throw new Error('認識できる形式のデータなし');
+  saveAll();
+  return parts.join(' / ') + ' を上書き';
+}
+
+// ================================================================
+// サンプル
+// ================================================================
+function sampleProducts() {
+  return [
+    { code:'P001', name:'カルボナーラ',           price:1380, cost:0, category:'パスタ' },
+    { code:'P002', name:'ボロネーゼ',             price:1380, cost:0, category:'パスタ' },
+    { code:'P003', name:'ペペロンチーノ',         price:1180, cost:0, category:'パスタ' },
+    { code:'P004', name:'マルゲリータ',           price:1580, cost:0, category:'ピザ' },
+    { code:'P005', name:'クアトロフォルマッジ',   price:1780, cost:0, category:'ピザ' },
+    { code:'P006', name:'シーザーサラダ',         price:880,  cost:0, category:'サラダ' },
+    { code:'P007', name:'前菜盛り合わせ',         price:1480, cost:0, category:'前菜' },
+    { code:'P008', name:'ティラミス',             price:680,  cost:0, category:'デザート' },
+    { code:'P009', name:'赤ワイン(グラス)',       price:680,  cost:0, category:'ドリンク' },
+    { code:'P010', name:'白ワイン(グラス)',       price:680,  cost:0, category:'ドリンク' },
+  ];
+}
+function sampleRecipes() {
+  return [
+    { product:'カルボナーラ',   ingredient:'パスタ',       unit:'g', usage:120, unitCost:2.5 },
+    { product:'カルボナーラ',   ingredient:'ベーコン',     unit:'g', usage:40,  unitCost:6.0 },
+    { product:'カルボナーラ',   ingredient:'卵',           unit:'個',usage:1,   unitCost:25 },
+    { product:'カルボナーラ',   ingredient:'パルメザン',   unit:'g', usage:30,  unitCost:12 },
+    { product:'ボロネーゼ',     ingredient:'パスタ',       unit:'g', usage:120, unitCost:2.5 },
+    { product:'ボロネーゼ',     ingredient:'牛ひき肉',     unit:'g', usage:80,  unitCost:4.5 },
+    { product:'ボロネーゼ',     ingredient:'トマトソース', unit:'g', usage:80,  unitCost:2.0 },
+    { product:'ボロネーゼ',     ingredient:'玉ねぎ',       unit:'g', usage:30,  unitCost:0.5 },
+    { product:'ペペロンチーノ', ingredient:'パスタ',       unit:'g', usage:120, unitCost:2.5 },
+    { product:'ペペロンチーノ', ingredient:'ニンニク',     unit:'g', usage:10,  unitCost:3.0 },
+    { product:'ペペロンチーノ', ingredient:'唐辛子',       unit:'g', usage:2,   unitCost:5.0 },
+    { product:'マルゲリータ',   ingredient:'ピザ生地',     unit:'枚',usage:1,   unitCost:80 },
+    { product:'マルゲリータ',   ingredient:'トマトソース', unit:'g', usage:60,  unitCost:2.0 },
+    { product:'マルゲリータ',   ingredient:'モッツァレラ', unit:'g', usage:80,  unitCost:8.0 },
+    { product:'マルゲリータ',   ingredient:'バジル',       unit:'g', usage:3,   unitCost:8.0 },
+    { product:'クアトロフォルマッジ', ingredient:'ピザ生地',     unit:'枚', usage:1,  unitCost:80 },
+    { product:'クアトロフォルマッジ', ingredient:'モッツァレラ', unit:'g',  usage:60, unitCost:8 },
+    { product:'クアトロフォルマッジ', ingredient:'ゴルゴンゾーラ',unit:'g', usage:30, unitCost:15 },
+    { product:'クアトロフォルマッジ', ingredient:'パルメザン',   unit:'g',  usage:20, unitCost:12 },
+    { product:'クアトロフォルマッジ', ingredient:'リコッタ',     unit:'g',  usage:30, unitCost:10 },
+    { product:'シーザーサラダ', ingredient:'ロメインレタス',unit:'g', usage:80,  unitCost:1.5 },
+    { product:'シーザーサラダ', ingredient:'ベーコン',     unit:'g', usage:20,  unitCost:6.0 },
+    { product:'シーザーサラダ', ingredient:'パルメザン',   unit:'g', usage:15,  unitCost:12 },
+    { product:'シーザーサラダ', ingredient:'クルトン',     unit:'g', usage:10,  unitCost:3.0 },
+    { product:'前菜盛り合わせ', ingredient:'生ハム',       unit:'g', usage:30,  unitCost:15 },
+    { product:'前菜盛り合わせ', ingredient:'サラミ',       unit:'g', usage:30,  unitCost:12 },
+    { product:'前菜盛り合わせ', ingredient:'オリーブ',     unit:'g', usage:20,  unitCost:6.0 },
+    { product:'前菜盛り合わせ', ingredient:'チーズ盛合せ', unit:'g', usage:40,  unitCost:10 },
+    { product:'ティラミス',     ingredient:'マスカルポーネ',unit:'g', usage:60,  unitCost:10 },
+    { product:'ティラミス',     ingredient:'卵',           unit:'個',usage:1,   unitCost:25 },
+    { product:'ティラミス',     ingredient:'スポンジ',     unit:'g', usage:30,  unitCost:2.0 },
+    { product:'ティラミス',     ingredient:'ココア',       unit:'g', usage:3,   unitCost:8.0 },
+    { product:'赤ワイン(グラス)', ingredient:'赤ワイン',   unit:'ml',usage:120, unitCost:1.2 },
+    { product:'白ワイン(グラス)', ingredient:'白ワイン',   unit:'ml',usage:120, unitCost:1.2 },
+  ];
+}
+function sampleInventory() {
+  const names = {};
+  sampleRecipes().forEach(r => names[r.ingredient] = r.unit);
+  return Object.entries(names).map(([name, unit]) => ({
+    name, unit,
+    initial: unit==='個' ? 100 : unit==='枚' ? 50 : unit==='ml' ? 3000 : 2000,
+    purchased: 0,
+    reorderPoint: unit==='個' ? 30 : unit==='枚' ? 15 : unit==='ml' ? 800 : 500,
+  }));
+}
+function loadDefaults(kind) {
+  if (!confirm('現在のデータを上書きします。よろしいですか？')) return;
+  if (kind === 'products')  { products = sampleProducts(); saveLS(LS_PRODUCTS, products); }
+  if (kind === 'recipes')   { recipes  = sampleRecipes();  saveLS(LS_RECIPES, recipes);  }
+  if (kind === 'inventory') { inventory= sampleInventory();saveLS(LS_INVENTORY, inventory); }
+  renderAll();
+}
+
+// ================================================================
+// クラウド（スプレッドシート）からマスタ取得
+// ================================================================
+async function pullMasterFromCloud() {
+  const btn = document.getElementById('pullBtn');
+  const status = document.getElementById('pullStatus');
+  btn.disabled = true;
+  const oldText = btn.textContent;
+  btn.textContent = '☁️ 取得中...';
+  status.innerHTML = '';
+  try {
+    const { data, cached } = await OTTO.master.fetch();
+    if (Array.isArray(data.products))  { products  = data.products;  saveLS(LS_PRODUCTS,  products);  }
+    if (Array.isArray(data.recipes))   { recipes   = data.recipes;   saveLS(LS_RECIPES,   recipes);   }
+    if (Array.isArray(data.inventory)) { inventory = data.inventory; saveLS(LS_INVENTORY, inventory); }
+    if (data.invResetDate) localStorage.setItem(LS_INV_RESET, data.invResetDate);
+    renderAll();
+    status.innerHTML = `<span style="color:#15803d">✅ 取得完了 (商品${products.length}/レシピ${recipes.length}/在庫${inventory.length})${cached ? ' ※キャッシュ' : ''}</span>`;
+  } catch (err) {
+    status.innerHTML = `<span style="color:#991b1b">❌ 取得失敗: ${escHtml(err.message)}</span>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = oldText;
+  }
+}
+
+// ================================================================
+// 全削除
+// ================================================================
+function clearAll(kind) {
+  if (!confirm('本当に全削除しますか？')) return;
+  if (kind === 'products')  { products  = []; saveLS(LS_PRODUCTS, products);  }
+  if (kind === 'recipes')   { recipes   = []; saveLS(LS_RECIPES, recipes);    }
+  if (kind === 'inventory') { inventory = []; saveLS(LS_INVENTORY, inventory);}
+  renderAll();
+}
+
+// ================================================================
+// UI ヘルパ
+// ================================================================
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  if (name === 'products')  renderProducts();
+  if (name === 'recipes')   renderRecipes();
+  if (name === 'inventory') renderInventory();
+}
+
+function download(fname, content, mime='text/plain') {
+  const blob = new Blob([content], { type: mime + ';charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fname; a.click();
+  URL.revokeObjectURL(url);
+}
+function pad(n){return String(n).padStart(2,'0')}
+function fmt(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
+function yen(n) { return '¥' + (Math.round(n*10)/10).toLocaleString(); }
+function escHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escAttr(s) { return escHtml(s).replace(/"/g, '&quot;'); }
+</script>
+</body>
+</html>

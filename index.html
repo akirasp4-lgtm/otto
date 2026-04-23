@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>オットー 売上入力</title>
+<meta name="theme-color" content="#b91c1c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="オットー">
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+:root{
+  --primary:#b91c1c;--primary-light:#fef2f2;--accent:#f59e0b;
+  --success:#16a34a;--danger:#dc2626;
+  --gray-50:#f9fafb;--gray-100:#f3f4f6;--gray-200:#e5e7eb;
+  --gray-300:#d1d5db;--gray-400:#9ca3af;--gray-500:#6b7280;--gray-800:#1f2937;
+  --shadow:0 1px 3px rgba(0,0,0,.1);
+  --r:10px;--safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
+     background:#f5f5f4;color:var(--gray-800);min-height:100vh;padding-bottom:80px}
+
+.app-header{background:white;border-bottom:1px solid var(--gray-200);padding:0 16px;height:56px;
+            display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
+.app-title{font-size:16px;font-weight:700;color:var(--primary);display:flex;align-items:center;gap:6px}
+.app-title::before{content:"🍝"}
+.header-links{display:flex;gap:6px}
+.header-links a{font-size:11px;padding:6px 10px;border:1px solid var(--gray-200);border-radius:6px;
+                background:white;color:var(--gray-500);text-decoration:none;white-space:nowrap}
+
+.main{max-width:640px;margin:0 auto;padding:14px 12px;display:flex;flex-direction:column;gap:12px}
+.card{background:white;border-radius:var(--r);box-shadow:var(--shadow);padding:16px}
+
+.form-label{display:block;font-size:11px;font-weight:700;color:var(--gray-500);
+            margin-bottom:4px;text-transform:uppercase;letter-spacing:.03em}
+.form-label.req::after{content:"*";color:var(--danger);margin-left:2px}
+.form-control{width:100%;padding:12px;border:1.5px solid var(--gray-200);border-radius:6px;
+              font-size:16px;outline:none;background:white;margin-bottom:10px;font-family:inherit}
+.form-control:focus{border-color:var(--primary)}
+.form-control.auto-filled{border-color:#22c55e;background:#f0fdf4}
+
+.capture-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.capture-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;
+             gap:6px;padding:22px 10px;border:2px dashed var(--gray-300);border-radius:var(--r);
+             background:var(--gray-50);cursor:pointer;position:relative;
+             font-size:14px;font-weight:600;color:var(--gray-500)}
+.capture-btn:hover{background:var(--primary-light);border-color:var(--primary);color:var(--primary)}
+.capture-btn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.capture-btn .icon{font-size:28px}
+
+.preview-wrap{display:none}
+.preview-wrap.show{display:block}
+.receipt-thumb{width:100%;border-radius:6px;border:2px solid var(--gray-200);overflow:hidden;
+               margin-bottom:14px;background:#000;position:relative}
+.receipt-thumb img{width:100%;max-height:300px;object-fit:contain;display:block;margin:0 auto}
+
+.ocr-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.75);display:none;flex-direction:column;
+             align-items:center;justify-content:center;gap:10px;border-radius:4px;padding:20px}
+.ocr-overlay.show{display:flex}
+.ocr-spinner{width:40px;height:40px;border:4px solid rgba(255,255,255,0.3);border-top-color:white;
+             border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ocr-text{color:white;font-size:13px;font-weight:600;text-align:center}
+
+.banner{display:none;padding:10px 12px;border-radius:8px;margin-bottom:12px;font-size:13px;font-weight:600;line-height:1.5}
+.banner.show{display:block}
+.banner.success{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+.banner.partial{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+.banner.error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+
+.btn{width:100%;padding:14px;border:none;border-radius:6px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-success{background:var(--success);color:white}
+.btn-primary{background:var(--primary);color:white}
+.btn-ghost{background:transparent;color:var(--gray-500);border:1px solid var(--gray-200)}
+.btn-warn{background:var(--accent);color:white}
+.btn-small{padding:8px 12px;font-size:13px;width:auto}
+
+/* 商品行 */
+.item-row{display:grid;grid-template-columns:1fr 80px 40px;gap:8px;align-items:center;
+          padding:10px;border:1.5px solid var(--gray-200);border-radius:8px;margin-bottom:8px;background:#fff}
+.item-row.warn{border-color:#fbbf24;background:#fffbeb}
+.item-row input{padding:8px;border:1px solid var(--gray-200);border-radius:4px;font-size:15px;font-family:inherit}
+.item-row .del-btn{background:#fee2e2;color:#991b1b;border:none;border-radius:4px;
+                   width:36px;height:36px;cursor:pointer;font-size:16px}
+.item-badge{display:inline-block;font-size:10px;padding:2px 6px;border-radius:10px;margin-left:4px}
+.item-badge.ok{background:#d1fae5;color:#065f46}
+.item-badge.warn{background:#fef3c7;color:#92400e}
+
+.add-item-btn{width:100%;padding:10px;border:1.5px dashed var(--gray-300);border-radius:8px;background:var(--gray-50);
+              color:var(--gray-500);font-weight:600;cursor:pointer;font-family:inherit;font-size:13px}
+
+/* 合計 */
+.total-box{background:var(--gray-50);border-radius:8px;padding:14px;margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.total-item{display:flex;justify-content:space-between;padding:4px 0}
+.total-item .label{color:var(--gray-500);font-size:12px}
+.total-item .val{font-weight:700;font-size:15px}
+.total-item.big .val{font-size:20px;color:var(--primary)}
+
+/* 履歴カード */
+.hist-card{display:flex;justify-content:space-between;align-items:center;padding:10px;
+           border-bottom:1px solid var(--gray-100)}
+.hist-card:last-child{border-bottom:none}
+.hist-main{font-weight:700;font-size:14px}
+.hist-sub{font-size:11px;color:var(--gray-500);margin-top:2px}
+.hist-amt{font-weight:700;color:var(--primary)}
+
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:calc(64px + var(--safe-bottom));
+            background:white;border-top:1px solid var(--gray-200);display:flex;z-index:200;padding-bottom:var(--safe-bottom)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+         font-size:10px;font-weight:600;color:var(--gray-400);background:none;border:none;gap:2px;cursor:pointer;font-family:inherit}
+.nav-btn.active{color:var(--primary)}
+.nav-btn .nav-icon{font-size:20px}
+
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+.picker-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;
+                 align-items:center;justify-content:center;padding:12px}
+.picker-modal-bg.show{display:flex}
+.picker-modal-box{background:white;border-radius:14px;width:100%;max-width:520px;height:80vh;
+                  display:flex;flex-direction:column;overflow:hidden}
+.picker-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--gray-200);font-size:16px;font-weight:700}
+.picker-header button{border:none;background:none;font-size:22px;cursor:pointer;color:#666;width:36px;height:36px;border-radius:18px}
+.picker-search{padding:8px 12px;border-bottom:1px solid var(--gray-200)}
+.picker-search input{width:100%;padding:10px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:16px;font-family:inherit}
+.picker-list{flex:1;overflow-y:auto;padding:4px 8px}
+.picker-item{padding:12px;border-bottom:1px solid var(--gray-100);cursor:pointer;border-radius:6px}
+.picker-item:hover{background:var(--primary-light)}
+.picker-item .p-main{font-weight:700;font-size:15px}
+.picker-item .p-sub{font-size:11px;color:var(--gray-500);margin-top:3px}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-title">オットー 売上入力</div>
+  <div class="header-links">
+    <a href="admin.html">店長</a>
+    <a href="master.html">マスタ</a>
+  </div>
+</header>
+
+<main class="main">
+
+<!-- ===== 入力タブ ===== -->
+<div class="tab-panel active" id="panel-input">
+
+  <div class="card">
+    <label class="form-label req">担当</label>
+    <input type="text" class="form-control" id="staffName" placeholder="例: 田中"
+           oninput="localStorage.setItem('otto_staff_v1', this.value)">
+  </div>
+
+  <div class="card">
+    <div id="uploadSection">
+      <div class="capture-btns">
+        <label class="capture-btn">
+          <input type="file" accept="image/*" capture="environment" onchange="handleFile(this.files[0])">
+          <span class="icon">📸</span>
+          <span>伝票を撮影</span>
+        </label>
+        <label class="capture-btn">
+          <input type="file" accept="image/*" onchange="handleFile(this.files[0])">
+          <span class="icon">🖼️</span>
+          <span>写真を選択</span>
+        </label>
+      </div>
+      <div style="font-size:11px;color:var(--gray-500);text-align:center;margin-top:6px">
+        真上から撮影 / 影を入れない / 手書きは濃くはっきり
+      </div>
+    </div>
+
+    <div class="preview-wrap" id="previewWrap">
+      <div class="receipt-thumb">
+        <img id="receiptImg" src="" alt="伝票">
+        <div class="ocr-overlay" id="ocrOverlay">
+          <div class="ocr-spinner"></div>
+          <div class="ocr-text" id="ocrStatusText">AI で解析中...</div>
+        </div>
+      </div>
+
+      <div class="banner" id="ocrBanner"></div>
+
+      <label class="form-label req">日付</label>
+      <input type="date" class="form-control" id="fDate">
+
+      <label class="form-label">伝票番号</label>
+      <input type="text" class="form-control" id="fReceiptNo" placeholder="T0001 等（空ならファイル名から自動採番）">
+
+      <label class="form-label req">商品明細</label>
+      <div id="itemsList"></div>
+      <button class="add-item-btn" onclick="addItemRow()">＋ 商品を追加</button>
+
+      <div class="total-box" id="totalBox">
+        <div class="total-item big"><span class="label">売上合計</span><span class="val" id="sumSale">¥0</span></div>
+        <div class="total-item"><span class="label">原価合計</span><span class="val" id="sumCost">¥0</span></div>
+        <div class="total-item"><span class="label">粗利</span><span class="val" id="sumProfit">¥0</span></div>
+        <div class="total-item"><span class="label">原価率</span><span class="val" id="sumRate">-</span></div>
+      </div>
+
+      <label class="form-label" style="margin-top:12px">備考</label>
+      <input type="text" class="form-control" id="fNote" placeholder="雨で客足少なめ など">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+        <button class="btn btn-ghost" onclick="cancelInput()">キャンセル</button>
+        <button class="btn btn-success" onclick="saveRecord()">保存して次へ</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== 履歴タブ ===== -->
+<div class="tab-panel" id="panel-list">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-weight:700">📋 今日の伝票</div>
+      <div style="font-size:12px;color:var(--gray-500)" id="todayCount">0件</div>
+    </div>
+    <div id="todayList"></div>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:700;margin-bottom:10px">🗓️ すべて（最新20件）</div>
+    <div id="allList"></div>
+  </div>
+
+  <div class="card">
+    <button class="btn btn-primary" onclick="sendToAdmin()" id="sendBtn">📤 管理者に送信（クラウド保存）</button>
+    <div style="font-size:11px;color:var(--gray-500);margin-top:8px;text-align:center">
+      Googleドライブに保存され、店長画面で受信できます
+    </div>
+    <div id="sendStatus" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card">
+    <button class="btn btn-ghost" onclick="exportSalesJson()">💾 JSONで出力（オフライン時用）</button>
+    <div style="font-size:11px;color:var(--gray-500);margin-top:8px;text-align:center">
+      ネットが繋がらない時はこちら。後から LINE 等で店長に送信
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="font-size:11px;color:var(--gray-500);text-align:center" id="masterStatus">マスタ読込中...</div>
+  </div>
+</div>
+
+</main>
+
+<!-- ===== 商品ピッカー ===== -->
+<div class="picker-modal-bg" id="pickerBg">
+  <div class="picker-modal-box">
+    <div class="picker-header">
+      <div>商品を選ぶ</div>
+      <button onclick="closePicker()">×</button>
+    </div>
+    <div class="picker-search">
+      <input type="text" id="pickerSearch" placeholder="検索... 例: カルボ" oninput="renderPicker()">
+    </div>
+    <div class="picker-list" id="pickerList"></div>
+  </div>
+</div>
+
+<!-- ===== 下部ナビ ===== -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick="switchTab('input',this)"><span class="nav-icon">🧾</span><span>入力</span></button>
+  <button class="nav-btn" onclick="switchTab('list',this)"><span class="nav-icon">📋</span><span>履歴</span></button>
+</nav>
+
+<script src="otto-api.js"></script>
+<script>
+// ================================================================
+// 定数・状態
+// ================================================================
+const WORKER_URL = 'https://keihi-ocr.akirasp4.workers.dev'; // OCR は既存Worker流用
+const LS_SALES = 'otto_sales_v1';
+const LS_PRODUCTS = 'otto_products_v1';
+const LS_STAFF = 'otto_staff_v1';
+
+let currentImg = null;
+let sales = loadLS(LS_SALES, []);
+let products = loadLS(LS_PRODUCTS, defaultProducts());
+let items = [];      // 入力中の商品明細
+let pickerTargetIdx = -1;
+
+// ================================================================
+// 初期化
+// ================================================================
+window.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById('staffName').value = localStorage.getItem(LS_STAFF) || '';
+  document.getElementById('fDate').valueAsDate = new Date();
+  addItemRow(); // 初期1行
+  renderAll();
+  await loadMasterFromCloud();
+});
+
+// ================================================================
+// マスタをクラウドから取得
+// ================================================================
+async function loadMasterFromCloud() {
+  const status = document.getElementById('masterStatus');
+  if (!status) return;
+  try {
+    const { data, cached, cachedAt } = await OTTO.master.fetch();
+    if (Array.isArray(data.products) && data.products.length) {
+      products = data.products;
+      saveLS(LS_PRODUCTS, products);
+    }
+    if (cached) {
+      status.innerHTML = `⚠️ オフライン: キャッシュ ${new Date(cachedAt).toLocaleString()} のマスタで動作中`;
+      status.style.color = '#d97706';
+    } else {
+      status.innerHTML = `✅ マスタ最新化 (商品${products.length}件)`;
+      status.style.color = '#15803d';
+    }
+  } catch (err) {
+    status.innerHTML = `❌ マスタ取得失敗: ${err.message} / ローカル値で動作`;
+    status.style.color = '#991b1b';
+    console.warn('[master]', err);
+  }
+}
+
+function loadLS(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+  catch { return fallback; }
+}
+function saveLS(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
+
+// ================================================================
+// サンプル商品マスタ（master.htmlで上書き可能）
+// ================================================================
+function defaultProducts() {
+  return [
+    { code:'P001', name:'カルボナーラ',           price:1380, cost:460,  category:'パスタ' },
+    { code:'P002', name:'ボロネーゼ',             price:1380, cost:450,  category:'パスタ' },
+    { code:'P003', name:'ペペロンチーノ',         price:1180, cost:320,  category:'パスタ' },
+    { code:'P004', name:'マルゲリータ',           price:1580, cost:580,  category:'ピザ' },
+    { code:'P005', name:'クアトロフォルマッジ',   price:1780, cost:720,  category:'ピザ' },
+    { code:'P006', name:'シーザーサラダ',         price:880,  cost:280,  category:'サラダ' },
+    { code:'P007', name:'前菜盛り合わせ',         price:1480, cost:520,  category:'前菜' },
+    { code:'P008', name:'ティラミス',             price:680,  cost:220,  category:'デザート' },
+    { code:'P009', name:'赤ワイン(グラス)',       price:680,  cost:145,  category:'ドリンク' },
+    { code:'P010', name:'白ワイン(グラス)',       price:680,  cost:145,  category:'ドリンク' },
+  ];
+}
+
+// ================================================================
+// ファイル処理
+// ================================================================
+async function handleFile(file) {
+  if (!file) return;
+  if (file.type && !file.type.startsWith('image/')) return;
+
+  const resized = await resizeImg(file, 1600);
+  if (!resized) { alert('画像の読み込みに失敗しました'); return; }
+
+  currentImg = resized;
+  document.getElementById('uploadSection').style.display = 'none';
+  document.getElementById('receiptImg').src = currentImg;
+  document.getElementById('previewWrap').classList.add('show');
+  document.getElementById('fDate').valueAsDate = new Date();
+
+  await runOCR(currentImg);
+}
+
+async function resizeImg(file, max) {
+  return new Promise(res => {
+    const r = new FileReader();
+    r.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const ratio = Math.min(1, max/img.width, max/img.height);
+        const c = document.createElement('canvas');
+        c.width  = img.width  * ratio;
+        c.height = img.height * ratio;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        res(c.toDataURL('image/jpeg', 0.88));
+      };
+      img.onerror = () => res(null);
+      img.src = e.target.result;
+    };
+    r.onerror = () => res(null);
+    r.readAsDataURL(file);
+  });
+}
+
+// ================================================================
+// OCR（既存 Cloudflare Worker → Groq/Gemini プロキシ）
+// ================================================================
+async function runOCR(imgSrc) {
+  const overlay = document.getElementById('ocrOverlay');
+  overlay.classList.add('show');
+  hideBanner();
+
+  const b64 = imgSrc.split(',')[1];
+  const mimeType = imgSrc.split(';')[0].split(':')[1] || 'image/jpeg';
+
+  const productList = products.map(p => p.name).join(' / ');
+
+  const body = JSON.stringify({
+    contents: [{
+      parts: [
+        { inlineData: { mimeType, data: b64 } },
+        { text: `これは飲食店「オットー」の伝票画像です。情報を抽出し、必ずJSON形式のみで回答してください。
+
+【抽出項目】
+- date: 日付 YYYY-MM-DD 形式。元号表記は西暦化（令和6年=2024、26年=2026）
+- receipt_no: 伝票番号（T0001等）。無ければ null
+- staff: 担当者名。書かれていなければ null
+- items: 商品明細の配列。各要素 { "name": "商品名", "qty": 数量, "note": "" }
+
+【重要ルール】
+商品名は必ず以下の「登録商品一覧」のいずれかに正規化して記載してください。ゆらぎを統一することが最優先。
+一覧にない商品名の場合はそのまま記載し、note に「要確認」と入れてください。
+
+【登録商品一覧】
+${productList}
+
+【出力例】
+{"date":"2026-04-23","receipt_no":"T0042","staff":"田中","items":[{"name":"カルボナーラ","qty":2,"note":""},{"name":"赤ワイン(グラス)","qty":1,"note":""}]}
+
+読み取れない項目は null にしてください。JSON以外の文章は一切出力禁止。` }
+      ]
+    }],
+    generationConfig: { temperature: 0 }
+  });
+
+  try {
+    const res = await fetch(WORKER_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body
+    });
+    const data = await res.json();
+    overlay.classList.remove('show');
+
+    if (!res.ok) {
+      showBanner('error', `解析エラー: ${data?.error?.message || 'HTTP '+res.status}`);
+      return;
+    }
+
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const jsonStr = raw.match(/\{[\s\S]*\}/)?.[0] || '';
+    if (!jsonStr) { showBanner('error', '伝票情報を抽出できませんでした。手動入力してください。'); return; }
+
+    let parsed;
+    try { parsed = JSON.parse(jsonStr); }
+    catch { showBanner('error', '解析結果の形式が不正です。手動入力してください。'); return; }
+
+    applyParsed(parsed);
+  } catch (err) {
+    overlay.classList.remove('show');
+    showBanner('error', `通信エラー: ${err.message}`);
+    console.error('[OCR]', err);
+  }
+}
+
+function applyParsed(p) {
+  if (p.date)        { setField('fDate', p.date); markAuto('fDate'); }
+  if (p.receipt_no)  { setField('fReceiptNo', p.receipt_no); markAuto('fReceiptNo'); }
+  if (p.staff)       { setField('staffName', p.staff); markAuto('staffName'); localStorage.setItem(LS_STAFF, p.staff); }
+
+  // 商品明細
+  items = [];
+  document.getElementById('itemsList').innerHTML = '';
+  let okCount = 0;
+  let warnCount = 0;
+  if (Array.isArray(p.items)) {
+    p.items.forEach(it => {
+      const matched = findProduct(it.name);
+      addItemRow({
+        name: matched ? matched.name : (it.name || ''),
+        qty: it.qty || 1,
+        matched: !!matched,
+        note: it.note || ''
+      });
+      matched ? okCount++ : warnCount++;
+    });
+  }
+  if (items.length === 0) addItemRow();
+  renderTotals();
+
+  if (okCount && !warnCount) showBanner('success', `${okCount}件の商品を自動入力しました。数量を確認してください。`);
+  else if (warnCount) showBanner('partial', `${okCount}件OK / ${warnCount}件は要確認（マスタと一致しない商品名）。`);
+  else showBanner('error', '商品名を読み取れませんでした。手動で追加してください。');
+}
+
+function setField(id, v) {
+  const el = document.getElementById(id);
+  if (el) el.value = v;
+}
+function markAuto(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.add('auto-filled');
+}
+
+// ================================================================
+// 日本語正規化・商品マッチング
+// ================================================================
+function normalizeJa(s) {
+  if (!s) return '';
+  return String(s)
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[ァ-ヴ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60))
+    .replace(/\s+/g, '')
+    .replace(/[()（）]/g, '');
+}
+function findProduct(name) {
+  if (!name) return null;
+  const n = normalizeJa(name);
+  // 完全一致優先
+  let hit = products.find(p => normalizeJa(p.name) === n);
+  if (hit) return hit;
+  // 部分一致
+  hit = products.find(p => normalizeJa(p.name).includes(n) || n.includes(normalizeJa(p.name)));
+  return hit || null;
+}
+
+// ================================================================
+// 商品明細の行管理
+// ================================================================
+function addItemRow(preset = {}) {
+  const idx = items.length;
+  items.push({
+    name: preset.name || '',
+    qty: preset.qty || 1,
+    matched: preset.matched !== undefined ? preset.matched : !!findProduct(preset.name),
+    note: preset.note || ''
+  });
+  renderItemRow(idx);
+}
+function renderItemRow(idx) {
+  const list = document.getElementById('itemsList');
+  const row = document.createElement('div');
+  row.className = 'item-row';
+  row.dataset.idx = idx;
+  row.innerHTML = `
+    <div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+        <input type="text" style="flex:1" placeholder="商品名" value="${escAttr(items[idx].name)}"
+               onchange="updateItemName(${idx}, this.value)" onclick="openPicker(${idx})">
+      </div>
+      <div style="font-size:10px;color:var(--gray-500)" id="itemStatus${idx}"></div>
+    </div>
+    <input type="number" min="1" value="${items[idx].qty}" inputmode="numeric"
+           onchange="updateItemQty(${idx}, this.value)">
+    <button class="del-btn" onclick="delItem(${idx})">×</button>
+  `;
+  list.appendChild(row);
+  refreshRowStatus(idx);
+}
+function refreshRowStatus(idx) {
+  const row = document.querySelector(`.item-row[data-idx="${idx}"]`);
+  const status = document.getElementById(`itemStatus${idx}`);
+  if (!row || !status) return;
+  const it = items[idx];
+  const p = findProduct(it.name);
+  if (p) {
+    row.classList.remove('warn');
+    status.innerHTML = `<span class="item-badge ok">✓ ¥${p.price.toLocaleString()}</span> 原価 ¥${p.cost.toLocaleString()}`;
+  } else if (it.name) {
+    row.classList.add('warn');
+    status.innerHTML = `<span class="item-badge warn">要確認</span> マスタに未登録`;
+  } else {
+    row.classList.remove('warn');
+    status.textContent = '';
+  }
+}
+function updateItemName(idx, v) { items[idx].name = v; refreshRowStatus(idx); renderTotals(); }
+function updateItemQty(idx, v)  { items[idx].qty = Math.max(1, parseInt(v)||1); renderTotals(); }
+function delItem(idx) {
+  items.splice(idx, 1);
+  document.getElementById('itemsList').innerHTML = '';
+  items.forEach((_, i) => renderItemRow(i));
+  renderTotals();
+}
+function renderTotals() {
+  let sale = 0, cost = 0;
+  items.forEach(it => {
+    const p = findProduct(it.name);
+    if (p) { sale += p.price * it.qty; cost += p.cost * it.qty; }
+  });
+  document.getElementById('sumSale').textContent = '¥' + sale.toLocaleString();
+  document.getElementById('sumCost').textContent = '¥' + cost.toLocaleString();
+  document.getElementById('sumProfit').textContent = '¥' + (sale-cost).toLocaleString();
+  document.getElementById('sumRate').textContent = sale > 0 ? ((cost/sale)*100).toFixed(1)+'%' : '-';
+}
+
+// ================================================================
+// 商品ピッカー
+// ================================================================
+function openPicker(idx) {
+  pickerTargetIdx = idx;
+  document.getElementById('pickerSearch').value = '';
+  document.getElementById('pickerBg').classList.add('show');
+  renderPicker();
+}
+function closePicker() {
+  document.getElementById('pickerBg').classList.remove('show');
+  pickerTargetIdx = -1;
+}
+function renderPicker() {
+  const q = normalizeJa(document.getElementById('pickerSearch').value);
+  const list = q ? products.filter(p => normalizeJa(p.name+' '+p.category).includes(q)) : products;
+  const el = document.getElementById('pickerList');
+  if (!list.length) {
+    el.innerHTML = `<div style="padding:30px;text-align:center;color:var(--gray-400);font-size:13px">一致する商品なし</div>`;
+    return;
+  }
+  el.innerHTML = list.map(p => `
+    <div class="picker-item" onclick="pickProduct('${escAttr(p.name)}')">
+      <div class="p-main">${escHtml(p.name)} <span style="font-weight:normal;color:var(--primary)">¥${p.price.toLocaleString()}</span></div>
+      <div class="p-sub">${escHtml(p.category)} / 原価 ¥${p.cost.toLocaleString()}</div>
+    </div>`).join('');
+}
+function pickProduct(name) {
+  if (pickerTargetIdx < 0) return;
+  items[pickerTargetIdx].name = name;
+  document.querySelector(`.item-row[data-idx="${pickerTargetIdx}"] input[type=text]`).value = name;
+  refreshRowStatus(pickerTargetIdx);
+  renderTotals();
+  closePicker();
+}
+
+// ================================================================
+// 保存
+// ================================================================
+function saveRecord() {
+  const staff = document.getElementById('staffName').value.trim();
+  const date  = document.getElementById('fDate').value;
+  const receiptNo = document.getElementById('fReceiptNo').value.trim() || autoReceiptNo();
+  const note  = document.getElementById('fNote').value.trim();
+
+  if (!staff) { alert('担当名を入力してください'); return; }
+  if (!date)  { alert('日付を入力してください'); return; }
+  const valid = items.filter(it => it.name && it.qty > 0);
+  if (!valid.length) { alert('商品を1つ以上入力してください'); return; }
+
+  // 1伝票 = 複数行の売上レコード
+  const now = Date.now();
+  const records = valid.map((it, i) => {
+    const p = findProduct(it.name);
+    const qty = Number(it.qty) || 1;
+    const unitPrice = p ? p.price : 0;
+    const unitCost  = p ? p.cost  : 0;
+    return {
+      id: now + '-' + i,
+      date,
+      receiptNo,
+      product: p ? p.name : it.name,
+      matched: !!p,
+      qty,
+      unitPrice,
+      unitCost,
+      sale: unitPrice * qty,
+      cost: unitCost * qty,
+      profit: (unitPrice - unitCost) * qty,
+      staff,
+      note: [it.note, note].filter(Boolean).join(' / '),
+      savedAt: new Date().toISOString()
+    };
+  });
+
+  // 重複チェック（同伝票番号）
+  const dup = sales.some(s => s.receiptNo === receiptNo && s.date === date);
+  if (dup) {
+    if (!confirm(`伝票番号 ${receiptNo} は既に保存されています。追加で保存しますか？`)) return;
+  }
+
+  sales.push(...records);
+  saveLS(LS_SALES, sales);
+
+  cancelInput();
+  renderAll();
+  alert('保存しました（' + records.length + '件）');
+}
+function autoReceiptNo() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return 'AUTO-' + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
+}
+
+function cancelInput() {
+  currentImg = null;
+  items = [];
+  document.getElementById('previewWrap').classList.remove('show');
+  document.getElementById('uploadSection').style.display = 'block';
+  document.getElementById('itemsList').innerHTML = '';
+  document.getElementById('fReceiptNo').value = '';
+  document.getElementById('fNote').value = '';
+  ['fDate','fReceiptNo','staffName'].forEach(id => document.getElementById(id)?.classList.remove('auto-filled'));
+  addItemRow();
+  hideBanner();
+}
+
+// ================================================================
+// 履歴・JSON出力
+// ================================================================
+function renderAll() {
+  const today = new Date().toISOString().slice(0,10);
+  const todays = sales.filter(s => s.date === today);
+  document.getElementById('todayCount').textContent = todays.length + '件';
+
+  const groupByReceipt = arr => {
+    const g = {};
+    arr.forEach(s => {
+      const k = s.date + '|' + s.receiptNo;
+      (g[k] ||= { date: s.date, receiptNo: s.receiptNo, staff: s.staff, lines: [], sale: 0 });
+      g[k].lines.push(s);
+      g[k].sale += s.sale;
+    });
+    return Object.values(g).sort((a,b) => (b.date+b.receiptNo).localeCompare(a.date+a.receiptNo));
+  };
+
+  document.getElementById('todayList').innerHTML = renderHistGroup(groupByReceipt(todays), '本日まだ伝票なし');
+  document.getElementById('allList').innerHTML   = renderHistGroup(groupByReceipt(sales).slice(0,20), '保存データなし');
+}
+function renderHistGroup(groups, emptyMsg) {
+  if (!groups.length) return `<div style="padding:20px;text-align:center;color:var(--gray-400);font-size:13px">${emptyMsg}</div>`;
+  return groups.map(g => `
+    <div class="hist-card">
+      <div>
+        <div class="hist-main">${escHtml(g.receiptNo)} <span style="font-weight:normal;color:var(--gray-500);font-size:11px">${escHtml(g.date)} ${escHtml(g.staff)}</span></div>
+        <div class="hist-sub">${g.lines.map(l => escHtml(l.product)+' ×'+l.qty).join(' / ')}</div>
+      </div>
+      <div class="hist-amt">¥${g.sale.toLocaleString()}</div>
+    </div>`).join('');
+}
+
+// ================================================================
+// 管理者に送信（Worker → Apps Script → Drive）
+// ================================================================
+async function sendToAdmin() {
+  const btn = document.getElementById('sendBtn');
+  const status = document.getElementById('sendStatus');
+  if (!sales.length) { alert('送信する売上データがありません'); return; }
+  const staff = document.getElementById('staffName').value.trim() || 'unknown';
+
+  if (!confirm(`${sales.length}件の売上を送信します。よろしいですか？`)) return;
+
+  btn.disabled = true;
+  btn.textContent = '📤 送信中...';
+  status.innerHTML = '';
+  try {
+    const res = await OTTO.sales.send(staff, sales);
+    status.innerHTML = `<div style="background:#f0fdf4;color:#15803d;padding:8px;border-radius:6px;font-size:12px">✅ ${res.saved}件を送信しました</div>`;
+    if (confirm('✅ 送信完了。端末の売上リストは削除しますか？\n(残しても二重送信にはなりません)')) {
+      sales = [];
+      saveLS(LS_SALES, sales);
+      renderAll();
+    }
+  } catch (err) {
+    status.innerHTML = `<div style="background:#fef2f2;color:#991b1b;padding:8px;border-radius:6px;font-size:12px">❌ 送信失敗: ${err.message}<br>JSON出力でオフライン送信してください</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📤 管理者に送信（クラウド保存）';
+  }
+}
+
+function exportSalesJson() {
+  if (!sales.length) { alert('出力するデータがありません'); return; }
+  const name = (document.getElementById('staffName').value.trim() || 'staff');
+  const today = new Date().toISOString().slice(0,10);
+  const fname = `otto_sales_${today}_${name}.json`;
+  const blob = new Blob([JSON.stringify({ exported: new Date().toISOString(), staff: name, sales }, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fname; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ================================================================
+// UI ヘルパ
+// ================================================================
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (tab === 'list') renderAll();
+}
+function showBanner(type, html) {
+  const b = document.getElementById('ocrBanner');
+  b.className = `banner ${type} show`;
+  b.innerHTML = html;
+}
+function hideBanner() { document.getElementById('ocrBanner').className = 'banner'; }
+function escHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escAttr(s) { return escHtml(s).replace(/"/g, '&quot;'); }
+</script>
+</body>
+</html>
