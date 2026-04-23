@@ -247,11 +247,11 @@ function renderProducts() {
     return `
     <tr>
       <td><input type="text" value="${escAttr(p.code||'')}" onchange="updP(${i},'code',this.value)" style="width:80px"></td>
-      <td><input type="text" value="${escAttr(p.name||'')}" onchange="updP(${i},'name',this.value);syncProductInRecipes(${i},this.value)"></td>
+      <td><input type="text" value="${escAttr(p.name||'')}" onchange="updP(${i},'name',this.value);syncProductInRecipes(${i},this.value)" style="min-width:220px;font-size:15px;font-weight:600"></td>
       <td class="num"><input type="number" value="${p.price||0}" onchange="updP(${i},'price',Number(this.value))" style="width:100px"></td>
       <td class="num">${yen(cost)}</td>
       <td class="num">${rate}</td>
-      <td><input type="text" value="${escAttr(p.category||'')}" onchange="updP(${i},'category',this.value)" style="width:100px"></td>
+      <td><input type="text" value="${escAttr(p.category||'')}" onchange="updP(${i},'category',this.value)" style="width:110px"></td>
       <td><button class="del-btn" onclick="delP(${i})">削除</button></td>
     </tr>`;
   }).join('');
